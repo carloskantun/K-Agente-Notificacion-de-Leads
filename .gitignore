@@ -1,0 +1,31 @@
+# =============================================================================
+# .gitignore — FRAMEWORK AGENTES IA
+# =============================================================================
+
+# ── CRÍTICO: Nunca subas archivos con credenciales ──
+*.env
+.env
+.env.*
+*.secret
+secrets/
+wrangler.toml          # Generado por build.js — contiene datos del cliente
+
+# ── Configuraciones de clientes reales (solo sube template.json) ──
+# Comenta esta línea si quieres versionar los configs (sin credenciales)
+config/[^t]*.json
+
+# ── Artefactos de build ──
+dist/
+node_modules/
+.wrangler/
+
+# ── OS ──
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDEs ──
+.vscode/settings.json
+.idea/
+*.swp
+*.swo

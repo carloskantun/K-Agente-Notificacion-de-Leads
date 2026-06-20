@@ -1,0 +1,97 @@
+{
+  "_comment": "=======================================================================",
+  "_comment2": "  PLANTILLA BASE DE CONFIGURACIÓN DE CLIENTE",
+  "_comment3": "  Copia este archivo como config/<nombre-cliente>.json y rellénalo.",
+  "_comment4": "  NUNCA incluyas credenciales reales en este archivo de plantilla.",
+  "_comment5": "  Los secrets sensibles (API keys) se cargan vía `wrangler secret put`.",
+  "_comment6": "=======================================================================",
+
+  "paquete": "simple",
+  "_comentario_paquete": "Opciones: 'simple' | 'ia' | 'premium'",
+
+  "cliente": {
+    "nombre": "Nombre del Negocio",
+    "slug": "nombre-del-negocio",
+    "sitioWeb": "https://www.ejemplo.com",
+    "idioma": "es",
+    "zonaHoraria": "America/Mexico_City"
+  },
+
+  "ia": {
+    "proveedor": "openai",
+    "modelo": "gpt-4o-mini",
+    "temperatura": 0.4,
+    "maxTokens": 512,
+    "promptSistema": [
+      "Eres el asistente virtual de [Nombre del Negocio], empresa de [tipo de servicio] en [Ciudad, País].",
+      "Tu rol es analizar la solicitud del cliente que llegó por el formulario web y generar:",
+      "1. Un resumen claro del problema reportado.",
+      "2. Una cotización estimada basada en las tarifas del negocio.",
+      "3. Un mensaje de seguimiento amable y profesional para el cliente.",
+      "",
+      "TARIFAS Y SERVICIOS:",
+      "- Servicio A: $X - $Y MXN",
+      "- Servicio B: $X - $Y MXN",
+      "- Diagnóstico a domicilio: $Z MXN (se descuenta si contratan el servicio)",
+      "",
+      "REGLAS:",
+      "- Responde SIEMPRE en español.",
+      "- Nunca inventes precios fuera del rango establecido.",
+      "- Si el problema es ambiguo, solicita más información al cliente.",
+      "- Sé conciso: máximo 3 párrafos."
+    ]
+  },
+
+  "features": {
+    "_comentario": "Activa/desactiva funciones según el paquete contratado",
+    "ia": false,
+    "respuestaAlCliente": false,
+    "email": false,
+    "sms": false
+  },
+
+  "despacho": {
+    "_comentario": "Telegram es el canal principal (todos los paquetes). WhatsApp siempre se incluye como link wa.me sin costo.",
+
+    "telegram": {
+      "chatId": "TELEGRAM_CHAT_ID_AQUI",
+      "comentario": "TELEGRAM_BOT_TOKEN se carga como wrangler secret"
+    },
+
+    "whatsapp": {
+      "numeroDestino": "521XXXXXXXXXX",
+      "comentario": "Siempre incluido — genera link wa.me gratuito. Formato: 521XXXXXXXXXX"
+    },
+
+    "email": {
+      "destinatarios": ["dueno@negocio.com"],
+      "asuntoPrefijo": "[Lead] ",
+      "comentario": "Solo Premium. RESEND_API_KEY se carga como wrangler secret"
+    },
+
+    "sms": {
+      "fromNumber": "+15005550006",
+      "toNumber": "+521XXXXXXXXXX",
+      "comentario": "Solo Premium. TWILIO_ACCOUNT_SID y TWILIO_AUTH_TOKEN como wrangler secrets"
+    }
+  },
+
+  "formulario": {
+    "camposRequeridos": ["nombre", "telefono", "problema"],
+    "camposOpcionales": ["email", "direccion", "disponibilidad"],
+    "longitudMaximaProblema": 1000
+  },
+
+  "cors": {
+    "origenesPermitidos": [
+      "https://www.ejemplo.com",
+      "https://ejemplo.com"
+    ],
+    "comentario": "Agrega SOLO los dominios que pueden enviar datos a este Worker."
+  },
+
+  "respuestaAlCliente": {
+    "mensaje": "¡Gracias por contactarnos! Hemos recibido tu solicitud y te contactaremos en menos de 30 minutos.",
+    "incluirCotizacion": true
+  }
+}

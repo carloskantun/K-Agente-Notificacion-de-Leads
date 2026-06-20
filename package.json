@@ -1,0 +1,19 @@
+{
+  "name": "agente-notificacion-ia",
+  "version": "1.0.0",
+  "description": "Framework privado para desplegar agentes de notificación IA en Cloudflare Workers",
+  "type": "module",
+  "scripts": {
+    "build": "node build.js",
+    "dev": "node build.js ${CLIENT:-reparacionesadomicilio} --dev",
+    "deploy:staging": "node build.js ${CLIENT:-reparacionesadomicilio} --env staging --deploy",
+    "deploy:prod": "node build.js ${CLIENT:-reparacionesadomicilio} --env production --deploy"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "wrangler": "^3.78.0"
+  },
+  "private": true
+}
