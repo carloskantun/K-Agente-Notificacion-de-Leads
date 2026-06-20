@@ -236,11 +236,120 @@ Entrega al usuario:
 
 ---
 
+## FLUJO DE ACTUALIZACIÓN DE CLIENTE
+
+**Frases que activan este flujo:**
+_"actualizar [cliente]", "modificar [cliente]", "el cliente X quiere cambiar...", "agregar servicio a...", "cambió el precio de...", "nuevo canal para...", "quitar servicio de..."_
+
+**No uses el flujo de despliegue nuevo. Sigue estos pasos:**
+
+### Paso A — Leer config actual
+
+Lee `config/[slug].json` y muestra al empleado un resumen claro:
+```
+Cliente: [nombre]
+Paquete actual: [simple / ia / premium]
+Servicios en el prompt: [lista]
+Canal principal: [telegram / email / whatsapp]
+WhatsApp: [número]
+```
+Pregunta: _"¿Qué quieres cambiar?"_
+
+### Paso B — Identificar el tipo de cambio
+
+Escucha la respuesta y clasifica internamente qué tipo de modificación es:
+
+- **Información del negocio** (nombre, web, zona horaria) → editar sección `cliente`
+- **Nuevo servicio o tarifa** → actualizar `ia.promptSistema` con el servicio nuevo, sin borrar los existentes
+- **Precio actualizado** → localizar el servicio en el prompt y actualizar solo ese rango
+- **Servicio eliminado** → removerlo del prompt
+- **Nuevo canal de notificación** (ej: agregar email) → actualizar `despacho` y `features`
+- **Cambio de número WhatsApp** → actualizar `despacho.whatsapp.numeroDestino`
+- **Cambio de Chat ID de Telegram** → actualizar `despacho.telegram.chatId`
+- **Agregar campos al formulario** → actualizar `formulario.camposRequeridos` u `opcionales`
+- **Cambio de paquete** → usar el **Flujo de Upgrade** (ver abajo)
+
+### Paso C — Aplicar y confirmar
+
+1. Edita `config/[slug].json` con los cambios específicos.
+2. Muestra al empleado exactamente qué líneas cambiaron antes de redesplegar.
+3. Si el cambio agrega un canal nuevo (email, SMS), pregunta si ya tiene el secret listo para ese canal. Si no, ayúdalo a obtenerlo.
+4. Pregunta: _"¿Confirmamos el redeploy con estos cambios?"_
+5. Si confirma:
+```bash
+node build.js [slug] --env production --deploy
+```
+6. Confirma que el redeploy fue exitoso y recuerda al empleado probar el health check.
+
+**Importante:** Si el cambio es solo en el prompt de IA o en datos del negocio, no se necesitan secrets nuevos — solo redesplegar.
+
+---
+
+## FLUJO DE UPGRADE DE PAQUETE
+
+**Frases que activan este flujo:**
+_"subir de paquete [cliente]", "upgrade [cliente]", "ahora quiere IA", "activar premium para...", "Simple a Con IA", "agregar IA a [cliente]"_
+
+### Paso A — Mostrar situación actual
+
+Lee `config/[slug].json` y muestra:
+```
+Cliente: [nombre]
+Paquete actual: Simple → Paquete nuevo: Con IA   (o el que corresponda)
+
+Lo que se va a activar:
+✅ Análisis automático del lead con IA
+✅ Cotización estimada basada en tarifas del negocio
+
+Lo que se necesita nuevo:
+🔑 API Key de IA (OpenAI o Gemini)
+📝 Información de servicios y tarifas (para configurar el prompt)
+```
+
+### Paso B — Recopilar lo que falta según el upgrade
+
+**De Simple → Con IA, preguntar:**
+1. ¿Cuál proveedor de IA prefieren: OpenAI o Gemini?
+   - `OPENAI_API_KEY` → https://platform.openai.com/api-keys (~$0.01 USD / 10 leads)
+   - `GEMINI_API_KEY` → https://aistudio.google.com/app/apikey (capa gratuita)
+2. ¿Cuáles son los servicios y tarifas actuales del negocio? _(Para redactar el prompt)_
+
+**De Simple o Con IA → Premium, preguntar adicionalmente:**
+3. ¿A qué correo(s) llegan las notificaciones? → `RESEND_API_KEY` de https://resend.com
+4. ¿A qué número llegan los SMS? → `TWILIO_ACCOUNT_SID` + `TWILIO_AUTH_TOKEN` de https://console.twilio.com
+5. ¿Quieren que el agente responda automáticamente al cliente que llenó el formulario?
+
+**No vuelvas a pedir secrets que ya están configurados** (TELEGRAM_BOT_TOKEN, etc.).
+Puedes verificar cuáles existen con: `wrangler secret list --name agente-[slug]`
+
+### Paso C — Actualizar config y redesplegar
+
+1. Actualiza `paquete` en el JSON al nuevo valor.
+2. Actualiza `features` según el nuevo paquete:
+   - **Con IA:** `ia: true`, resto en `false`
+   - **Premium:** todos en `true`
+3. Si el upgrade incluye IA, redacta o actualiza `ia.promptSistema` con los servicios y tarifas del negocio.
+4. Si el upgrade agrega email o SMS, completa `despacho.email` o `despacho.sms`.
+5. Muestra el resumen de cambios y pide confirmación.
+6. Carga los **nuevos** secrets uno por uno:
+```bash
+wrangler secret put OPENAI_API_KEY --name agente-[slug]
+# (solo los que son nuevos para este upgrade)
+```
+7. Redesplega:
+```bash
+node build.js [slug] --env production --deploy
+```
+8. Confirma éxito y recuerda al empleado que puede ver los logs con `wrangler tail agente-[slug]`.
+
+---
+
 ## REGLAS IMPORTANTES
 
-- **Nunca** saltes pasos. El Paso 0 siempre va primero.
+- **Nunca** saltes pasos. El Paso 0 siempre va primero en clientes nuevos.
 - **Nunca** almacenes API keys en archivos del proyecto.
-- **Siempre** confirma el perfil generado antes de ejecutar comandos.
+- **Siempre** confirma los cambios con el empleado antes de ejecutar comandos.
+- **Nunca** pidas un secret que ya está configurado — verifica primero con `wrangler secret list`.
 - Si falta wrangler: `npm install` y luego `npx wrangler login`.
 - El `wrangler.toml` generado por `build.js` no debe subirse a git (ya está en `.gitignore`).
 - Para integrar el formulario del cliente, consulta `INTEGRATIONS.md` o pide a Claude que genere el snippet según la tecnología del sitio.
