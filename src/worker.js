@@ -258,7 +258,9 @@ async function dispatchTelegram(env, leadBlock, aiAnalysis) {
     );
   }
 
-  const text = `${leadBlock}\n\n---\n🤖 *Análisis IA:*\n${aiAnalysis}`;
+  const text = aiAnalysis
+    ? `${leadBlock}\n\n---\n🤖 *Análisis IA:*\n${aiAnalysis}`
+    : leadBlock;
 
   const res = await fetch(
     `https://api.telegram.org/bot${botToken}/sendMessage`,
