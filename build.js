@@ -173,34 +173,61 @@ async function prepareDist() {
 }
 
 // ---------------------------------------------------------------------------
+// RESOLVER BINARIO DE WRANGLER
+// ---------------------------------------------------------------------------
+// Prioridad: 1) global en PATH, 2) local en node_modules/.bin
+function resolveWranglerBin() {
+  // Intenta el global primero
+  try {
+    execSync("wrangler --version", { stdio: "pipe" });
+    return "wrangler";
+  } catch {
+    // no está global
+  }
+  // Intenta el local del proyecto
+  const localBin = path.join(
+    __dirname,
+    "node_modules",
+    ".bin",
+    process.platform === "win32" ? "wrangler.cmd" : "wrangler"
+  );
+  try {
+    execSync(`"${localBin}" --version`, { stdio: "pipe" });
+    return `"${localBin}"`;
+  } catch {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // VERIFICAR DEPENDENCIAS
 // ---------------------------------------------------------------------------
 function checkDependencies() {
   console.log("\n🔍 Verificando dependencias...");
-  try {
-    execSync("wrangler --version", { stdio: "pipe" });
-    const version = execSync("wrangler --version", { encoding: "utf-8" }).trim();
-    console.log(`   ✅ Wrangler: ${version}`);
-  } catch {
+
+  const wranglerBin = resolveWranglerBin();
+  if (!wranglerBin) {
     console.error(
-      "\n❌ Wrangler no está instalado o no está en el PATH.\n" +
-      "   Instalar: npm install -g wrangler\n" +
-      "   Luego autenticarse: wrangler login\n"
+      "\n❌ Wrangler no encontrado (ni global ni en node_modules).\n" +
+      "   Ejecuta: npm install   (instala local)\n" +
+      "   O bien:  npm install -g wrangler   (instala global)\n" +
+      "   Luego autenticarse: npx wrangler login\n"
     );
     process.exit(1);
   }
 
-  try {
-    const nodeVersion = process.version;
-    const major = parseInt(nodeVersion.slice(1).split(".")[0], 10);
-    if (major < 18) {
-      console.error(`\n❌ Node.js >= 18 requerido. Tienes: ${nodeVersion}\n`);
-      process.exit(1);
-    }
-    console.log(`   ✅ Node.js: ${nodeVersion}`);
-  } catch {
-    // Ignore
+  const version = execSync(`${wranglerBin} --version`, { encoding: "utf-8" }).trim();
+  console.log(`   ✅ Wrangler: ${version}`);
+
+  const nodeVersion = process.version;
+  const major = parseInt(nodeVersion.slice(1).split(".")[0], 10);
+  if (major < 18) {
+    console.error(`\n❌ Node.js >= 18 requerido. Tienes: ${nodeVersion}\n`);
+    process.exit(1);
   }
+  console.log(`   ✅ Node.js: ${nodeVersion}`);
+
+  return wranglerBin;
 }
 
 // ---------------------------------------------------------------------------
@@ -208,17 +235,29 @@ function checkDependencies() {
 // ---------------------------------------------------------------------------
 /**
  * Lanza un comando wrangler como proceso hijo, heredando stdin/stdout/stderr.
+ * @param {string} wranglerBin - Ruta o nombre del binario de wrangler
  * @param {string[]} args - Argumentos para wrangler
  * @param {string} cwd - Directorio de trabajo
  * @returns {Promise<number>} - Código de salida
  */
-function runWrangler(args, cwd) {
+function runWrangler(wranglerBin, args, cwd) {
   return new Promise((resolve, reject) => {
-    const proc = spawn("wrangler", args, {
+    // Quitar comillas externas del binario si las tiene
+    const bin = wranglerBin.replace(/^"|"$/g, "");
+
+    // Citar cada argumento que contenga espacios para que el shell no lo parta
+    const quotedArgs = args.map((a) => (a.includes(" ") ? `"${a}"` : a));
+
+    // Construir el comando completo como string para shell: true
+    // (necesario en Windows cuando bin o args tienen espacios)
+    const shellCmd = `"${bin}" ${quotedArgs.join(" ")}`;
+
+    const proc = spawn(shellCmd, [], {
       cwd,
       stdio: "inherit",
-      shell: process.platform === "win32",  // Necesario en Windows
+      shell: true,
     });
+
     proc.on("close", (code) => {
       if (code !== 0) {
         reject(new Error(`wrangler ${args[0]} salió con código ${code}`));
@@ -241,7 +280,7 @@ async function main() {
   if (env) console.log(`   Entorno: ${env}`);
 
   // 1. Verificar dependencias
-  checkDependencies();
+  const wranglerBin = checkDependencies();
 
   // 2. Leer config del cliente
   console.log(`\n📋 Leyendo config/${slug}.json...`);
@@ -283,7 +322,7 @@ async function main() {
     const devArgs = ["dev", destWorker, "--local"];
     if (env) devArgs.push("--env", env);
     try {
-      await runWrangler(devArgs, __dirname);
+      await runWrangler(wranglerBin, devArgs, __dirname);
     } catch (err) {
       console.error(`\n❌ Error en wrangler dev: ${err.message}\n`);
       process.exit(1);
@@ -294,10 +333,10 @@ async function main() {
     const deployArgs = ["deploy", destWorker];
     if (env) deployArgs.push("--env", env);
     try {
-      await runWrangler(deployArgs, __dirname);
+      await runWrangler(wranglerBin, deployArgs, __dirname);
       console.log(`\n✅ ¡Despliegue exitoso! Worker: agente-${slug}`);
       console.log(
-        `   URL: https://agente-${slug}.${obtenerSubdomain()}.workers.dev\n`
+        `   URL: https://agente-${slug}.${obtenerSubdomain(wranglerBin)}.workers.dev\n`
       );
     } catch (err) {
       console.error(`\n❌ Error en wrangler deploy: ${err.message}\n`);
@@ -315,9 +354,9 @@ async function main() {
  * Intenta obtener el subdominio de Cloudflare del usuario desde wrangler whoami.
  * Si falla, retorna "<tu-subdominio>".
  */
-function obtenerSubdomain() {
+function obtenerSubdomain(wranglerBin = "wrangler") {
   try {
-    const output = execSync("wrangler whoami", { encoding: "utf-8", stdio: "pipe" });
+    const output = execSync(`${wranglerBin} whoami`, { encoding: "utf-8", stdio: "pipe" });
     const match = output.match(/workers\.dev subdomain.*?:\s*(\S+)/i);
     return match?.[1] || "<tu-subdominio>";
   } catch {

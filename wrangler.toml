@@ -1,0 +1,140 @@
+# =============================================================================
+# WRANGLER.TOML — PLANTILLA DE DESPLIEGUE
+# =============================================================================
+#
+# Este archivo es una PLANTILLA. El script build.js lo procesa y genera
+# el wrangler.toml final reemplazando los placeholders .
+#
+# NUNCA pongas secrets (API keys, tokens) aquí.
+# Los secrets se cargan con: wrangler secret put NOMBRE_SECRET
+#
+# Documentación oficial: https://developers.cloudflare.com/workers/wrangler/configuration/
+# =============================================================================
+
+# ── Identidad del Worker ─────────────────────────────────────────────────────
+name = "agente-reparacionesadomicilio"
+main = "dist/worker.reparacionesadomicilio.js"
+
+# Compatibilidad: usa la fecha más reciente que hayas probado
+compatibility_date = "2024-09-23"
+
+# ES Modules (obligatorio para export default)
+# No es necesario declararlo explícitamente en versiones modernas de Wrangler,
+# pero lo incluimos para claridad.
+
+# ── Variables públicas de entorno ────────────────────────────────────────────
+# Estas variables son visibles en el dashboard de Cloudflare.
+# NO son secrets. Para API keys, usa `wrangler secret put`.
+[vars]
+
+# ── Identidad del cliente ──
+CLIENTE_NOMBRE    = "Reparaciones a Domicilio"
+
+# ── Proveedor y modelo de IA ──
+AI_PROVIDER       = "openai"
+AI_MODEL          = "gpt-4o-mini"
+AI_TEMPERATURE    = "0.3"
+AI_MAX_TOKENS     = "600"
+
+# El prompt del sistema puede ser largo. build.js lo inyecta como string.
+AI_SYSTEM_PROMPT  = ""
+
+# ── Canal de despacho ──
+DISPATCH_TYPE     = "telegram"
+
+# ── Configuración Telegram (si DISPATCH_TYPE = "telegram") ──
+TELEGRAM_CHAT_ID  = "-5428486044"
+
+# ── Configuración Email/Resend (si DISPATCH_TYPE = "email") ──
+EMAIL_DESTINATARIOS   = '["info@reparacionesadomicilio.com"]'
+EMAIL_ASUNTO_PREFIJO  = "[LEAD] "
+EMAIL_FROM_DOMAIN     = "reparacionesadomicilio.com"
+
+# ── Configuración WhatsApp (si DISPATCH_TYPE = "whatsapp") ──
+WHATSAPP_NUMERO   = "529988900451"
+
+# ── Validación del formulario ──
+ALLOWED_ORIGINS       = '["https://reparacionesadomicilio.com"]'
+REQUIRED_FIELDS       = '["nombre","telefono","problema"]'
+MAX_PROBLEMA_LENGTH   = "800"
+
+# ── Respuesta al cliente ──
+RESPUESTA_CLIENTE     = "¡Gracias! Hemos recibido tu solicitud. Nuestro técnico te llamará en menos de 30 minutos para confirmar tu cita."
+INCLUDE_COTIZACION    = "false"
+
+# ── Zona horaria (para timestamps en emails) ──
+TIMEZONE              = "America/Mexico_City"
+
+
+# =============================================================================
+# SECRETS — NO van en este archivo.
+# Ejecutar UNA VEZ por cliente tras el deploy:
+#
+#   wrangler secret put OPENAI_API_KEY        --name agente-reparacionesadomicilio
+#   wrangler secret put GEMINI_API_KEY        --name agente-reparacionesadomicilio
+#   wrangler secret put TELEGRAM_BOT_TOKEN    --name agente-reparacionesadomicilio
+#   wrangler secret put RESEND_API_KEY        --name agente-reparacionesadomicilio
+#
+# Cada comando te pedirá el valor de forma segura (sin que quede en el historial
+# del terminal si usas la forma interactiva).
+# =============================================================================
+
+
+# ── Límites de uso (opcional pero recomendado en producción) ─────────────────
+# [limits]
+# cpu_ms = 50       # Límite de CPU por request (default: 50ms en Free)
+
+
+# ── Observabilidad ───────────────────────────────────────────────────────────
+[observability]
+enabled = true
+head_sampling_rate = 1   # 100% de requests loggeadas (bajar en producción alta)
+
+
+# =============================================================================
+# ENTORNOS (environments) — para staging vs producción
+# =============================================================================
+
+# Entorno de staging (usa el mismo nombre con sufijo -staging)
+[env.staging]
+name = "agente-reparacionesadomicilio-staging"
+
+[env.staging.vars]
+CLIENTE_NOMBRE   = "Reparaciones a Domicilio [STAGING]"
+AI_PROVIDER      = "openai"
+AI_MODEL         = "gpt-4o-mini"
+AI_TEMPERATURE   = "0.5"
+AI_MAX_TOKENS    = "256"
+AI_SYSTEM_PROMPT = ""
+DISPATCH_TYPE    = "telegram"
+TELEGRAM_CHAT_ID = "-5428486044"
+ALLOWED_ORIGINS  = '["http://localhost:5500","http://127.0.0.1:5500"]'
+REQUIRED_FIELDS  = '["nombre","telefono","problema"]'
+MAX_PROBLEMA_LENGTH = "800"
+RESPUESTA_CLIENTE   = "[TEST] ¡Gracias! Hemos recibido tu solicitud. Nuestro técnico te llamará en menos de 30 minutos para confirmar tu cita."
+INCLUDE_COTIZACION  = "false"
+TIMEZONE            = "America/Mexico_City"
+
+# Entorno de producción
+[env.production]
+name = "agente-reparacionesadomicilio"
+
+[env.production.vars]
+CLIENTE_NOMBRE    = "Reparaciones a Domicilio"
+AI_PROVIDER       = "openai"
+AI_MODEL          = "gpt-4o-mini"
+AI_TEMPERATURE    = "0.3"
+AI_MAX_TOKENS     = "600"
+AI_SYSTEM_PROMPT  = ""
+DISPATCH_TYPE     = "telegram"
+TELEGRAM_CHAT_ID  = "-5428486044"
+EMAIL_DESTINATARIOS   = '["info@reparacionesadomicilio.com"]'
+EMAIL_ASUNTO_PREFIJO  = "[LEAD] "
+EMAIL_FROM_DOMAIN     = "reparacionesadomicilio.com"
+WHATSAPP_NUMERO       = "529988900451"
+ALLOWED_ORIGINS       = '["https://reparacionesadomicilio.com"]'
+REQUIRED_FIELDS       = '["nombre","telefono","problema"]'
+MAX_PROBLEMA_LENGTH   = "800"
+RESPUESTA_CLIENTE     = "¡Gracias! Hemos recibido tu solicitud. Nuestro técnico te llamará en menos de 30 minutos para confirmar tu cita."
+INCLUDE_COTIZACION    = "false"
+TIMEZONE              = "America/Mexico_City"
