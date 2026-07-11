@@ -9,6 +9,7 @@
 *.secret
 secrets/
 wrangler.toml          # Generado por build.js — contiene datos del cliente
+.dev.vars               # Secrets locales de `wrangler dev` (invitaciones/ y otros Workers)
 
 # ── Configuraciones de clientes reales (solo sube template.json) ──
 # Comenta esta línea si quieres versionar los configs (sin credenciales)

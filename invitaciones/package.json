@@ -1,0 +1,17 @@
+{
+  "name": "invitaciones-digitales",
+  "version": "1.0.0",
+  "description": "Landing page de invitación digital multi-evento (bodas, XV años, aniversarios) sobre Cloudflare Workers + KV",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^3.78.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
