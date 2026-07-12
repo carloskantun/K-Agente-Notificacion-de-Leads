@@ -101,15 +101,26 @@ Volver a llamar `POST /admin/eventos` con el mismo `slug` actualiza el evento
 | `fotoPortada` | no | URL de imagen de fondo del hero (ideal: subida vía `/admin/eventos/:slug/media`, ver abajo) |
 | `galeria` | no | Array `[{ tipo: "foto"\|"video", url, poster? }]` — se muestra en grid con lightbox. `poster` es la miniatura del video (si no se da, usa `url`). |
 | `itinerario` | no | Array `[{ hora, titulo, descripcion?, icono? }]` — se muestra como línea de tiempo. Si se omite, se arma automáticamente con `lugarCeremonia`/`lugarRecepcion` (compatibilidad con eventos creados antes de este campo). |
-| `mapaCeremonia` / `mapaRecepcion` | no | Dirección de texto (ej. `"Parroquia San José, Cancún"`) — se embebe como mapa de Google Maps interactivo + botón "Cómo llegar". No requiere API key de Google. |
+| `mapaCeremonia` / `mapaRecepcion` | no | Dirección de texto (ej. `"Parroquia San José, Cancún"`) **o** un link completo de Google Maps (ej. `https://maps.app.goo.gl/...`). Con dirección de texto se embebe un mapa interactivo + botón "Cómo llegar"; con un link completo (no se puede embeber) solo se muestra el botón que abre ese link. No requiere API key de Google. |
 | `lugarCeremonia`/`direccionCeremonia`/`horaCeremonia` | no | Usado para el itinerario automático si no defines `itinerario` |
 | `lugarRecepcion`/`direccionRecepcion`/`horaRecepcion` | no | Ídem, segundo punto del itinerario automático |
 | `codigoVestimenta` | no | |
 | `mesaDeRegalos` | no | Texto libre (link o instrucciones) |
-| `mensaje` | no | Mensaje/dedicatoria de los anfitriones |
+| `mensaje` | no | Mensaje/dedicatoria de los anfitriones (arriba del itinerario) |
+| `dedicatoria` | no | `{ mensaje?, columnas: [{ etiqueta, personas: [] }] }` — sección tipo "Padres & Padrinos". Cada columna es una lista de nombres bajo una etiqueta itálica; si hay 2+ columnas se separan con "&". |
+| `decoracion` | no | Imágenes PNG (idealmente transparentes) para decorar el hero: `esquinaSuperior`/`esquinaInferior` (se reflejan automáticamente al lado opuesto salvo que definas `esquinaSuperiorDer`/`esquinaInferiorDer`), `ilustracion` (se ancla abajo-derecha), `fondoTextura` (imagen de fondo de toda la página en vez del degradado del tema). Súbelas primero con `/admin/eventos/:slug/media`. |
 | `musicaUrl` | no | URL de audio de fondo (botón play/pause, no autoplay) |
 | `emailAutomatico` | no (default `false`), solo `modo=lista` | Si `true` y hay `RESEND_API_KEY`, envía el link por correo al importar el CSV |
 | `emailAsunto` / `emailFromNombre` / `emailFromDomain` | no | Personalización del correo de invitación |
+
+> **Sobre las decoraciones florales/ilustradas** (como en invitaciones tipo Canva con
+> flores, vestido, tiara, mariposas): el sistema soporta capas de imagen (`decoracion`)
+> para lograr ese efecto, pero esas ilustraciones en sí (acuarelas, flores, vestidos)
+> son arte con licencia — no vienen incluidas. Consíguelas como PNG transparente (Etsy,
+> Creative Fabrica, Canva "elementos" exportados como PNG, o encárgalas a un diseñador),
+> súbelas con el endpoint de media de abajo, y colócalas en `decoracion`. Mientras tanto,
+> cada tema (`boda`/`xv`/`aniversario`) trae un diseño elegante por defecto sin necesitar
+> ninguna imagen extra.
 
 ---
 

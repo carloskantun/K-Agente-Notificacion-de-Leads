@@ -249,9 +249,15 @@ async function manejarCrearEvento(request, env) {
     galeria: body.galeria ?? existente?.galeria ?? [],
     // itinerario: [{ hora, titulo, descripcion?, icono? }]
     itinerario: body.itinerario ?? existente?.itinerario ?? [],
-    // Dirección de texto para el mapa embebido (Google Maps sin API key)
+    // Dirección de texto O link completo de Google Maps (maps.app.goo.gl / google.com/maps/...)
     mapaCeremonia: body.mapaCeremonia ?? existente?.mapaCeremonia ?? "",
     mapaRecepcion: body.mapaRecepcion ?? existente?.mapaRecepcion ?? "",
+    // dedicatoria: { mensaje?, columnas: [{ etiqueta, personas: [] }] } — ej. "Padres & Padrinos"
+    dedicatoria: body.dedicatoria ?? existente?.dedicatoria ?? null,
+    // decoracion: URLs de imágenes PNG transparentes que subiste vía /admin/eventos/:slug/media.
+    // esquinaSuperior/esquinaInferior se reflejan automáticamente al otro lado a menos que
+    // definas esquinaSuperiorDer/esquinaInferiorDer explícitos. ilustracion se ancla abajo-derecha.
+    decoracion: body.decoracion ?? existente?.decoracion ?? null,
     musicaUrl: body.musicaUrl ?? existente?.musicaUrl ?? null,
     emailAutomatico: body.emailAutomatico ?? existente?.emailAutomatico ?? false,
     emailAsunto: body.emailAsunto ?? existente?.emailAsunto ?? "Estás invitado — {{titulo}}",

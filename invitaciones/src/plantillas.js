@@ -103,7 +103,7 @@ export function renderPagina({ evento, invitado, codigoInvalido, desbloqueado, e
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${titulo}</title>
 <meta name="robots" content="noindex, nofollow">
-${estilos(tema)}
+${estilos(tema, evento)}
 </head>
 <body>
 ${cuerpo}
@@ -123,7 +123,12 @@ function primeraFotoGaleria(evento) {
 // ESTILOS
 // ---------------------------------------------------------------------------
 
-function estilos(tema) {
+function estilos(tema, evento) {
+  const fondoTextura = evento?.decoracion?.fondoTextura;
+  const fondoBody = fondoTextura
+    ? `url('${fondoTextura.replace(/'/g, "%27")}') center/cover fixed, ${tema.gradiente}`
+    : tema.gradiente;
+
   return `<style>
   :root {
     --primario: ${tema.colorPrimario};
@@ -137,7 +142,7 @@ function estilos(tema) {
   body {
     margin: 0;
     min-height: 100vh;
-    background: ${tema.gradiente};
+    background: ${fondoBody};
     font-family: ${tema.fuenteTexto};
     color: var(--texto);
   }
@@ -161,12 +166,38 @@ function estilos(tema) {
     inset: 0;
     background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0.75) 100%);
   }
-  .hero-foto .hero-contenido { position: relative; z-index: 2; text-align: center; color: #fff; }
+  .hero-foto .hero-contenido { position: relative; z-index: 3; text-align: center; color: #fff; }
   .hero-foto .hero-contenido h1 { color: #fff; text-shadow: 0 2px 18px rgba(0,0,0,0.35); }
   .hero-foto .hero-etiqueta { color: #f4e9c8; }
 
-  .hero-plana { text-align: center; padding: 64px 16px 32px; }
+  .hero-plana { position: relative; text-align: center; padding: 64px 16px 32px; overflow: hidden; }
   .hero-plana h1 { color: var(--primario); }
+  .hero-plana .hero-contenido { position: relative; z-index: 3; }
+
+  /* ── Decoración (esquinas/ilustración subidas por el admin) ─────────── */
+  .hero-decoracion {
+    position: absolute;
+    width: 32%;
+    max-width: 200px;
+    z-index: 2;
+    pointer-events: none;
+    user-select: none;
+  }
+  .hero-decoracion.superior-izq { top: 0; left: 0; }
+  .hero-decoracion.superior-der { top: 0; right: 0; }
+  .hero-decoracion.inferior-izq { bottom: 0; left: 0; }
+  .hero-decoracion.inferior-der { bottom: 0; right: 0; }
+  .hero-ilustracion {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 46%;
+    max-width: 260px;
+    z-index: 1;
+    pointer-events: none;
+    user-select: none;
+  }
+  .divisor-ornamental { display: block; margin: 12px auto 0; color: var(--acento); }
 
   .hero-contenido .icono { font-size: 2.6rem; }
   .hero-contenido h1 {
@@ -378,6 +409,32 @@ function estilos(tema) {
 
   .mensaje { text-align: center; font-style: italic; line-height: 1.6; }
 
+  /* ── Dedicatoria (padres/padrinos) ───────────────────────────────────── */
+  .dedicatoria-grid {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 22px;
+    flex-wrap: wrap;
+    text-align: center;
+    margin-top: 16px;
+  }
+  .dedicatoria-columna { flex: 1; min-width: 130px; }
+  .dedicatoria-etiqueta {
+    font-family: var(--fuente-titulo);
+    font-style: italic;
+    color: var(--primario);
+    font-size: 1.15rem;
+    margin-bottom: 8px;
+  }
+  .dedicatoria-nombre { font-size: 0.92rem; margin-bottom: 4px; line-height: 1.4; }
+  .dedicatoria-separador {
+    font-family: var(--fuente-titulo);
+    font-size: 1.3rem;
+    color: var(--acento);
+    padding-top: 6px;
+  }
+
   /* ── Formularios ──────────────────────────────────────────────────────── */
   form.rsvp, form.clave { display: flex; flex-direction: column; gap: 14px; }
   label { font-weight: 600; font-size: 0.9rem; }
@@ -452,8 +509,55 @@ function estilos(tema) {
 // SECCIONES
 // ---------------------------------------------------------------------------
 
+/**
+ * Construye las imágenes de decoración (esquinas + ilustración) para un hero.
+ * Sube UN solo archivo de esquina y se refleja automáticamente al otro lado,
+ * a menos que definas el lado derecho de forma explícita.
+ */
+function decoracionEsquinas(decoracion) {
+  if (!decoracion) return "";
+  const partes = [];
+
+  const superiorIzq = decoracion.esquinaSuperior || null;
+  const superiorDer = decoracion.esquinaSuperiorDer || decoracion.esquinaSuperior || null;
+  const espejarSuperiorDer = !decoracion.esquinaSuperiorDer && !!decoracion.esquinaSuperior;
+  const inferiorIzq = decoracion.esquinaInferior || null;
+  const inferiorDer = decoracion.esquinaInferiorDer || decoracion.esquinaInferior || null;
+  const espejarInferiorDer = !decoracion.esquinaInferiorDer && !!decoracion.esquinaInferior;
+
+  if (superiorIzq) {
+    partes.push(`<img class="hero-decoracion superior-izq" src="${escapeHtml(superiorIzq)}" alt="">`);
+  }
+  if (superiorDer) {
+    const espejo = espejarSuperiorDer ? ' style="transform:scaleX(-1);"' : "";
+    partes.push(`<img class="hero-decoracion superior-der" src="${escapeHtml(superiorDer)}" alt=""${espejo}>`);
+  }
+  if (inferiorIzq) {
+    partes.push(`<img class="hero-decoracion inferior-izq" src="${escapeHtml(inferiorIzq)}" alt="">`);
+  }
+  if (inferiorDer) {
+    const espejo = espejarInferiorDer ? ' style="transform:scaleX(-1);"' : "";
+    partes.push(`<img class="hero-decoracion inferior-der" src="${escapeHtml(inferiorDer)}" alt=""${espejo}>`);
+  }
+  if (decoracion.ilustracion) {
+    partes.push(`<img class="hero-ilustracion" src="${escapeHtml(decoracion.ilustracion)}" alt="">`);
+  }
+
+  return partes.join("");
+}
+
+/** Pequeño divisor ornamental dibujado en SVG (línea + rombo), sin depender de artes externas. */
+function divisorOrnamental() {
+  return `<svg class="divisor-ornamental" width="150" height="18" viewBox="0 0 150 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <line x1="0" y1="9" x2="58" y2="9" stroke="currentColor" stroke-width="1"/>
+    <path d="M75 1 L83 9 L75 17 L67 9 Z" fill="currentColor"/>
+    <line x1="92" y1="9" x2="150" y2="9" stroke="currentColor" stroke-width="1"/>
+  </svg>`;
+}
+
 function renderCompuertaPassword(evento, tema, errorClave, fotoFondo) {
   const titulo = escapeHtml(evento.titulo || "Invitación");
+  const decoracion = decoracionEsquinas(evento.decoracion);
   const heroInterno = `
     <div class="icono">${tema.icono}</div>
     <div class="hero-etiqueta">${escapeHtml(tema.etiqueta)}</div>
@@ -461,8 +565,8 @@ function renderCompuertaPassword(evento, tema, errorClave, fotoFondo) {
     <p class="hero-subtitulo">Esta invitación es privada. Ingresa la contraseña para verla.</p>`;
 
   const hero = fotoFondo
-    ? `<div class="hero-foto" style="background-image:url('${escapeHtml(fotoFondo)}')"><div class="hero-contenido">${heroInterno}</div></div>`
-    : `<div class="hero-plana"><div class="hero-contenido">${heroInterno}</div></div>`;
+    ? `<div class="hero-foto" style="background-image:url('${escapeHtml(fotoFondo)}')">${decoracion}<div class="hero-contenido">${heroInterno}</div></div>`
+    : `<div class="hero-plana">${decoracion}<div class="hero-contenido">${heroInterno}</div></div>`;
 
   return `${hero}
 <div class="contenedor">
@@ -504,15 +608,17 @@ function renderInvitacionNoEncontrada(evento, tema) {
 }
 
 function renderContenidoEvento(evento, tema, invitado, fotoFondo) {
+  const decoracion = decoracionEsquinas(evento.decoracion);
   const heroInterno = `
     <div class="icono">${tema.icono}</div>
     <div class="hero-etiqueta">${escapeHtml(tema.etiqueta)}</div>
     <h1>${escapeHtml(evento.titulo || "")}</h1>
-    ${evento.subtitulo ? `<p class="hero-subtitulo">${escapeHtml(evento.subtitulo)}</p>` : ""}`;
+    ${evento.subtitulo ? `<p class="hero-subtitulo">${escapeHtml(evento.subtitulo)}</p>` : ""}
+    ${divisorOrnamental()}`;
 
   const hero = fotoFondo
-    ? `<div class="hero-foto" style="background-image:url('${escapeHtml(fotoFondo)}')"><div class="hero-contenido">${heroInterno}</div></div>`
-    : `<div class="hero-plana"><div class="hero-contenido">${heroInterno}</div></div>`;
+    ? `<div class="hero-foto" style="background-image:url('${escapeHtml(fotoFondo)}')">${decoracion}<div class="hero-contenido">${heroInterno}</div></div>`
+    : `<div class="hero-plana">${decoracion}<div class="hero-contenido">${heroInterno}</div></div>`;
 
   const countdown = seccionCountdown(evento);
 
@@ -520,6 +626,7 @@ function renderContenidoEvento(evento, tema, invitado, fotoFondo) {
 ${countdown}
 <div class="contenedor">
   ${countdown ? "" : `<div class="separador">${tema.separador} ${tema.separador} ${tema.separador}</div>`}
+  ${seccionDedicatoria(evento)}
   ${seccionItinerario(evento, tema)}
   ${seccionDetalles(evento, tema)}
   ${seccionMapa(evento, tema)}
@@ -529,6 +636,25 @@ ${countdown}
   ${seccionMusica(evento)}
   <div class="footer">Hecho con ${tema.icono} para ${escapeHtml(evento.titulo || "este evento")}</div>
 </div>`;
+}
+
+function seccionDedicatoria(evento) {
+  const dedicatoria = evento.dedicatoria;
+  const columnas = dedicatoria?.columnas;
+  if (!Array.isArray(columnas) || columnas.length === 0) return "";
+
+  const cols = columnas
+    .map(
+      (col) => `<div class="dedicatoria-columna">
+        <div class="dedicatoria-etiqueta">${escapeHtml(col.etiqueta || "")}</div>
+        ${(col.personas || []).map((p) => `<div class="dedicatoria-nombre">${escapeHtml(p)}</div>`).join("")}
+      </div>`
+    )
+    .join(columnas.length > 1 ? `<div class="dedicatoria-separador">&amp;</div>` : "");
+
+  return `<div class="tarjeta">
+    ${dedicatoria.mensaje ? `<p class="mensaje">${escapeHtml(dedicatoria.mensaje)}</p><div class="dedicatoria-grid" style="margin-top:20px;">${cols}</div>` : `<div class="dedicatoria-grid">${cols}</div>`}
+  </div>`;
 }
 
 function seccionCountdown(evento) {
@@ -639,7 +765,27 @@ function seccionMapa(evento, tema) {
   </div>`;
 }
 
+function esUrl(valor) {
+  return /^https?:\/\//i.test(String(valor || "").trim());
+}
+
+/**
+ * Renderiza el mapa de una ubicación. Acepta dos formatos en `direccion`:
+ *  - Texto libre ("Parroquia San José, Cancún") → se embebe un iframe interactivo
+ *    de Google Maps (sin API key) más un botón "Cómo llegar".
+ *  - Un link completo de Google Maps (https://maps.app.goo.gl/... o
+ *    https://www.google.com/maps/place/...) → esos links de redirección no se
+ *    pueden embeber en un iframe, así que solo se muestra el botón que abre
+ *    el link tal cual.
+ */
 function mapaEmbed(etiqueta, direccion) {
+  if (esUrl(direccion)) {
+    return `<div class="mapa-item">
+      <div class="mapa-titulo">📍 ${escapeHtml(etiqueta)}</div>
+      <a class="mapa-boton" href="${escapeHtml(direccion)}" target="_blank" rel="noopener">Ver ubicación en Google Maps →</a>
+    </div>`;
+  }
+
   const query = encodeURIComponent(direccion);
   return `<div class="mapa-item">
     <div class="mapa-titulo">📍 ${escapeHtml(etiqueta)}</div>
