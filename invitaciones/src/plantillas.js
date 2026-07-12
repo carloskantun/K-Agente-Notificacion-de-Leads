@@ -63,8 +63,25 @@ const TEMAS = {
   },
 };
 
-export function temaDe(tipo) {
-  return TEMAS[tipo] || TEMAS.boda;
+/**
+ * Resuelve el tema visual de un evento: parte de la paleta base del `tipo`
+ * y, si el evento define `colores`, la sobrescribe campo por campo. Así un
+ * mismo tema (ej. "xv") puede adaptarse al arte real del cliente sin tocar
+ * código (ej. azul hielo en vez del rosa por defecto).
+ */
+export function temaDe(tipo, evento) {
+  const base = TEMAS[tipo] || TEMAS.boda;
+  const colores = evento?.colores;
+  if (!colores) return base;
+  return {
+    ...base,
+    colorPrimario: colores.primario || base.colorPrimario,
+    colorSecundario: colores.secundario || base.colorSecundario,
+    colorAcento: colores.acento || base.colorAcento,
+    colorTexto: colores.texto || base.colorTexto,
+    gradiente: colores.gradiente || base.gradiente,
+    tarjetaFondo: colores.tarjetaFondo || base.tarjetaFondo,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -81,7 +98,7 @@ export function temaDe(tipo) {
  * @param {string|null} opts.errorClave - Mensaje de error al intentar la contraseña.
  */
 export function renderPagina({ evento, invitado, codigoInvalido, desbloqueado, errorClave }) {
-  const tema = temaDe(evento.tipo);
+  const tema = temaDe(evento.tipo, evento);
   const titulo = escapeHtml(evento.titulo || "Invitación");
   const fotoFondo = evento.fotoPortada || primeraFotoGaleria(evento);
 
@@ -108,6 +125,7 @@ ${estilos(tema, evento)}
 <body>
 ${cuerpo}
 ${mostrarContenido && evento.mostrarCountdown !== false && evento.fechaEvento ? scriptCountdown(evento.fechaEvento) : ""}
+${mostrarContenido && Array.isArray(evento.galeria) && evento.galeria.length > 0 ? scriptCarrusel() : ""}
 ${mostrarContenido ? scriptLightbox() : ""}
 </body>
 </html>`;
@@ -351,29 +369,74 @@ function estilos(tema, evento) {
   }
   .mapa-embed iframe { width: 100%; height: 100%; border: 0; display: block; }
   .mapa-boton {
-    display: inline-block;
-    margin-top: 8px;
-    color: var(--primario);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 12px 20px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--primario), var(--acento));
+    color: #fff;
     font-weight: 700;
     text-decoration: none;
     font-size: 0.88rem;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.16);
+    transition: transform 0.15s;
   }
+  .mapa-boton:active { transform: scale(0.96); }
 
-  /* ── Galería + lightbox ──────────────────────────────────────────────── */
-  .galeria-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-    gap: 10px;
+  /* ── Galería en carrusel + lightbox ──────────────────────────────────── */
+  .carrusel-wrap { margin: 0 -24px; padding: 0 24px; }
+  .carrusel {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
   }
+  .carrusel::-webkit-scrollbar { display: none; }
+  .carrusel-slide {
+    flex: 0 0 74%;
+    scroll-snap-align: center;
+  }
+  .carrusel-flechas { display: flex; justify-content: center; gap: 10px; margin-top: 12px; }
+  .carrusel-flecha {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0,0,0,0.06);
+    color: var(--primario);
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .carrusel-flecha:active { transform: scale(0.92); }
+  .carrusel-puntos { display: flex; justify-content: center; gap: 6px; margin-top: 10px; }
+  .carrusel-punto {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.18);
+    transition: width 0.2s, background 0.2s;
+  }
+  .carrusel-punto.activo { width: 20px; border-radius: 4px; background: var(--primario); }
+
   .galeria-item {
     position: relative;
+    width: 100%;
     aspect-ratio: 1 / 1;
-    border-radius: 14px;
+    border-radius: 16px;
     overflow: hidden;
     border: 0;
     padding: 0;
     cursor: pointer;
     background: rgba(0,0,0,0.05);
+    box-shadow: 0 10px 26px rgba(0,0,0,0.1);
   }
   .galeria-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s ease; }
   .galeria-item:hover img { transform: scale(1.06); }
@@ -383,9 +446,19 @@ function estilos(tema, evento) {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.4rem;
+    font-size: 1.6rem;
     color: #fff;
     background: rgba(0,0,0,0.28);
+  }
+  .galeria-item .play-badge span {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.28);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   .lightbox {
     position: fixed;
@@ -478,17 +551,50 @@ function estilos(tema, evento) {
   }
   .opciones-asistencia input { position: absolute; opacity: 0; pointer-events: none; }
   .opciones-asistencia label.seleccionado { background: var(--primario); color: #fff; }
-  button {
-    background: var(--primario);
+  button { border: none; cursor: pointer; font-family: inherit; }
+  button[type="submit"] {
+    background: linear-gradient(135deg, var(--primario), var(--acento));
     color: #fff;
-    border: none;
-    padding: 14px;
+    padding: 15px;
     border-radius: 14px;
     font-size: 1rem;
-    cursor: pointer;
     font-weight: 700;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.18);
+    transition: transform 0.15s, filter 0.15s;
   }
-  button:hover { filter: brightness(1.08); }
+  button[type="submit"]::before { content: "✨ "; }
+  button[type="submit"]:hover { filter: brightness(1.08); }
+  button[type="submit"]:active { transform: scale(0.97); }
+
+  /* ── Sección QR ───────────────────────────────────────────────────────── */
+  .qr-wrap { display: flex; justify-content: center; margin-top: 14px; }
+  .qr-wrap img {
+    width: 180px;
+    height: 180px;
+    border-radius: 18px;
+    background: #fff;
+    padding: 12px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.14);
+  }
+  .qr-texto { text-align: center; opacity: 0.75; font-size: 0.88rem; margin-top: 4px; }
+
+  /* ── Saludo personalizado ────────────────────────────────────────────── */
+  .saludo-invitado {
+    display: inline-block;
+    margin-top: 14px;
+    padding: 8px 18px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.25);
+    border: 1px solid rgba(255,255,255,0.35);
+    backdrop-filter: blur(6px);
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+  .hero-plana .saludo-invitado {
+    background: rgba(0,0,0,0.05);
+    border: 1px solid rgba(0,0,0,0.08);
+    color: var(--primario);
+  }
   .estado {
     text-align: center;
     padding: 10px;
@@ -511,8 +617,13 @@ function estilos(tema, evento) {
     height: 52px;
     padding: 0;
     z-index: 10;
+    background: linear-gradient(135deg, var(--primario), var(--acento));
+    color: #fff;
+    font-size: 1.2rem;
     box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    transition: transform 0.15s;
   }
+  .boton-musica:active { transform: scale(0.92); }
 </style>`;
 }
 
@@ -631,7 +742,8 @@ function renderContenidoEvento(evento, tema, invitado, fotoFondo) {
     <div class="hero-etiqueta">${escapeHtml(tema.etiqueta)}</div>
     <h1>${escapeHtml(evento.titulo || "")}</h1>
     ${evento.subtitulo ? `<p class="hero-subtitulo">${escapeHtml(evento.subtitulo)}</p>` : ""}
-    ${divisorOrnamental()}`;
+    ${divisorOrnamental()}
+    ${invitado ? `<div class="saludo-invitado">💌 Invitación especial para ${escapeHtml(invitado.nombre)}</div>` : ""}`;
 
   const hero = fotoFondo
     ? `<div class="hero-foto" style="background-image:url('${escapeHtml(fotoFondo)}')">${decoracion}<div class="hero-contenido">${heroInterno}</div></div>`
@@ -650,6 +762,7 @@ ${countdown}
   ${seccionGaleria(evento)}
   ${seccionMensaje(evento)}
   ${evento.modo === "lista" ? seccionRSVP(evento, invitado) : ""}
+  ${seccionQR()}
   ${seccionMusica(evento)}
   <div class="footer">Hecho con ${tema.icono} para ${escapeHtml(evento.titulo || "este evento")}</div>
 </div>`;
@@ -817,31 +930,67 @@ function seccionGaleria(evento) {
   const items = Array.isArray(evento.galeria) ? evento.galeria.slice(0, 24) : [];
   if (items.length === 0) return "";
 
-  const botones = items
+  const slides = items
     .map((item) => {
       const url = escapeHtml(item.url);
       if (item.tipo === "video") {
         const poster = escapeHtml(item.poster || item.url);
-        return `<button type="button" class="galeria-item" data-tipo="video" data-src="${url}">
-          <img src="${poster}" alt="" loading="lazy">
-          <span class="play-badge">▶</span>
-        </button>`;
+        return `<div class="carrusel-slide">
+          <button type="button" class="galeria-item" data-tipo="video" data-src="${url}">
+            <img src="${poster}" alt="" loading="lazy">
+            <span class="play-badge"><span>▶</span></span>
+          </button>
+        </div>`;
       }
-      return `<button type="button" class="galeria-item" data-tipo="foto" data-src="${url}">
-        <img src="${url}" alt="" loading="lazy">
-      </button>`;
+      return `<div class="carrusel-slide">
+        <button type="button" class="galeria-item" data-tipo="foto" data-src="${url}">
+          <img src="${url}" alt="" loading="lazy">
+        </button>
+      </div>`;
     })
     .join("");
+
+  const puntos = items.map((_, i) => `<span class="carrusel-punto${i === 0 ? " activo" : ""}"></span>`).join("");
 
   return `<div class="tarjeta">
     <div class="eyebrow">Galería</div>
     <h2>Momentos</h2>
-    <div class="galeria-grid">${botones}</div>
+    <div class="carrusel-wrap">
+      <div class="carrusel" id="carrusel-galeria">${slides}</div>
+    </div>
+    ${items.length > 1
+      ? `<div class="carrusel-flechas">
+          <button type="button" class="carrusel-flecha" id="carrusel-prev" aria-label="Anterior">‹</button>
+          <button type="button" class="carrusel-flecha" id="carrusel-next" aria-label="Siguiente">›</button>
+        </div>
+        <div class="carrusel-puntos" id="carrusel-puntos">${puntos}</div>`
+      : ""}
   </div>
   <div class="lightbox" id="lightbox" hidden>
     <button type="button" class="lightbox-cerrar" id="lightbox-cerrar">✕</button>
     <div class="lightbox-contenido" id="lightbox-contenido"></div>
   </div>`;
+}
+
+/**
+ * QR de la propia invitación (el link que el navegador ya tiene abierto),
+ * para guardar o compartir. Se arma con JS del lado del cliente para no
+ * necesitar el origin/URL absoluta desde el servidor.
+ */
+function seccionQR() {
+  return `<div class="tarjeta">
+    <div class="eyebrow">Comparte</div>
+    <h2>Tu código QR</h2>
+    <p class="qr-texto">Guárdalo o compártelo — abre directo esta invitación.</p>
+    <div class="qr-wrap"><img id="qr-imagen" alt="Código QR de esta invitación"></div>
+  </div>
+  <script>
+  (function() {
+    var img = document.getElementById('qr-imagen');
+    if (!img) return;
+    img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=' + encodeURIComponent(window.location.href);
+  })();
+  </script>`;
 }
 
 function seccionMensaje(evento) {
@@ -956,6 +1105,43 @@ function scriptCountdown(fechaISO) {
   }
   actualizar();
   var intervalo = setInterval(actualizar, 1000);
+})();
+</script>`;
+}
+
+function scriptCarrusel() {
+  return `<script>
+(function() {
+  var carrusel = document.getElementById('carrusel-galeria');
+  if (!carrusel) return;
+  var puntosWrap = document.getElementById('carrusel-puntos');
+  var puntos = puntosWrap ? Array.prototype.slice.call(puntosWrap.children) : [];
+  var prev = document.getElementById('carrusel-prev');
+  var next = document.getElementById('carrusel-next');
+
+  function anchoSlide() {
+    var slide = carrusel.querySelector('.carrusel-slide');
+    return slide ? slide.getBoundingClientRect().width + 12 : carrusel.clientWidth;
+  }
+
+  function actualizarPuntos() {
+    if (!puntos.length) return;
+    var indice = Math.round(carrusel.scrollLeft / anchoSlide());
+    puntos.forEach(function(p, i) { p.classList.toggle('activo', i === indice); });
+  }
+
+  var raf = null;
+  carrusel.addEventListener('scroll', function() {
+    if (raf) cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(actualizarPuntos);
+  });
+
+  if (prev) prev.addEventListener('click', function() {
+    carrusel.scrollBy({ left: -anchoSlide(), behavior: 'smooth' });
+  });
+  if (next) next.addEventListener('click', function() {
+    carrusel.scrollBy({ left: anchoSlide(), behavior: 'smooth' });
+  });
 })();
 </script>`;
 }

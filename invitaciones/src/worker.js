@@ -259,6 +259,10 @@ async function manejarCrearEvento(request, env) {
     // esquinaSuperior/esquinaInferior se reflejan automáticamente al otro lado a menos que
     // definas esquinaSuperiorDer/esquinaInferiorDer explícitos. ilustracion se ancla abajo-derecha.
     decoracion: body.decoracion ?? existente?.decoracion ?? null,
+    // colores: { primario?, secundario?, acento?, texto?, gradiente?, tarjetaFondo? } —
+    // sobrescribe la paleta del tema (boda/xv/aniversario) campo por campo para
+    // que combine con el arte real del cliente.
+    colores: body.colores ?? existente?.colores ?? null,
     musicaUrl: body.musicaUrl ?? existente?.musicaUrl ?? null,
     emailAutomatico: body.emailAutomatico ?? existente?.emailAutomatico ?? false,
     emailAsunto: body.emailAsunto ?? existente?.emailAsunto ?? "Estás invitado — {{titulo}}",

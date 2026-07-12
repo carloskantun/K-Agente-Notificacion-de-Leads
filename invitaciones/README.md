@@ -15,7 +15,21 @@ propio `slug`.
 ## Tres temas visuales
 
 `tipo`: `"boda"` · `"xv"` · `"aniversario"` — cada uno con su propia paleta de colores,
-tipografía y textos por defecto (ver `src/plantillas.js`).
+tipografía y textos por defecto (ver `src/plantillas.js`). La paleta de colores de
+cualquier tema se puede sobrescribir por evento con el campo `colores` (ver tabla
+de campos abajo) para que combine con el arte real del cliente.
+
+## Interactividad
+
+- **Galería en carrusel**: fotos y video se muestran en un carrusel horizontal
+  (swipe en móvil, flechas + puntos indicadores), tocar una tarjeta abre el
+  lightbox a pantalla completa.
+- **Código QR**: cada invitación muestra un QR de su propio link (útil para
+  compartir o imprimir).
+- **Saludo personalizado**: en modo `lista`, se muestra el nombre del invitado
+  en el hero, no solo en el formulario de RSVP.
+- **Botones con más presencia**: RSVP, "Cómo llegar" y el botón de música usan
+  degradado con los dos colores del tema en vez de un color plano.
 
 ---
 
@@ -109,6 +123,7 @@ Volver a llamar `POST /admin/eventos` con el mismo `slug` actualiza el evento
 | `mensaje` | no | Mensaje/dedicatoria de los anfitriones (arriba del itinerario) |
 | `dedicatoria` | no | `{ mensaje?, columnas: [{ etiqueta, personas: [] }] }` — sección tipo "Padres & Padrinos". Cada columna es una lista de nombres bajo una etiqueta itálica; si hay 2+ columnas se separan con "&". |
 | `decoracion` | no | Imágenes PNG (idealmente transparentes) para decorar el hero: `marco` (una sola imagen que cubre todo el hero — ideal para un diseño de fondo completo generado en Canva/etc.), `esquinaSuperior`/`esquinaInferior` (se reflejan automáticamente al lado opuesto salvo que definas `esquinaSuperiorDer`/`esquinaInferiorDer`), `ilustracion` (se ancla abajo-derecha), `fondoTextura` (imagen de fondo de toda la página en vez del degradado del tema). Súbelas primero con `/admin/eventos/:slug/media`. |
+| `colores` | no | `{ primario?, secundario?, acento?, texto?, gradiente?, tarjetaFondo? }` — sobrescribe la paleta del `tipo` campo por campo (ej. para que combine con el color real de las decoraciones). Cualquier campo omitido usa el valor por defecto del tema. |
 | `musicaUrl` | no | URL de audio de fondo (botón play/pause, no autoplay) |
 | `emailAutomatico` | no (default `false`), solo `modo=lista` | Si `true` y hay `RESEND_API_KEY`, envía el link por correo al importar el CSV |
 | `emailAsunto` / `emailFromNombre` / `emailFromDomain` | no | Personalización del correo de invitación |
