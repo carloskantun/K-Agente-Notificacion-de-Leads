@@ -103,7 +103,7 @@ export function temaDe(tipo, evento) {
 export function renderPagina({ evento, invitado, codigoInvalido, desbloqueado, errorClave }) {
   const tema = temaDe(evento.tipo, evento);
   const titulo = escapeHtml(evento.titulo || "Invitación");
-  const fotoFondo = evento.fotoPortada || primeraFotoGaleria(evento);
+  const fotoFondo = evento.fotoPortada || null;
 
   const mostrarContenido = evento.modo === "lista" ? true : !!desbloqueado;
 
@@ -132,12 +132,6 @@ ${mostrarContenido && Array.isArray(evento.galeria) && evento.galeria.length > 0
 ${mostrarContenido ? scriptLightbox() : ""}
 </body>
 </html>`;
-}
-
-function primeraFotoGaleria(evento) {
-  const galeria = Array.isArray(evento.galeria) ? evento.galeria : [];
-  const foto = galeria.find((item) => item.tipo !== "video");
-  return foto ? foto.url : null;
 }
 
 // ---------------------------------------------------------------------------
