@@ -108,7 +108,7 @@ Volver a llamar `POST /admin/eventos` con el mismo `slug` actualiza el evento
 | `mesaDeRegalos` | no | Texto libre (link o instrucciones) |
 | `mensaje` | no | Mensaje/dedicatoria de los anfitriones (arriba del itinerario) |
 | `dedicatoria` | no | `{ mensaje?, columnas: [{ etiqueta, personas: [] }] }` — sección tipo "Padres & Padrinos". Cada columna es una lista de nombres bajo una etiqueta itálica; si hay 2+ columnas se separan con "&". |
-| `decoracion` | no | Imágenes PNG (idealmente transparentes) para decorar el hero: `esquinaSuperior`/`esquinaInferior` (se reflejan automáticamente al lado opuesto salvo que definas `esquinaSuperiorDer`/`esquinaInferiorDer`), `ilustracion` (se ancla abajo-derecha), `fondoTextura` (imagen de fondo de toda la página en vez del degradado del tema). Súbelas primero con `/admin/eventos/:slug/media`. |
+| `decoracion` | no | Imágenes PNG (idealmente transparentes) para decorar el hero: `marco` (una sola imagen que cubre todo el hero — ideal para un diseño de fondo completo generado en Canva/etc.), `esquinaSuperior`/`esquinaInferior` (se reflejan automáticamente al lado opuesto salvo que definas `esquinaSuperiorDer`/`esquinaInferiorDer`), `ilustracion` (se ancla abajo-derecha), `fondoTextura` (imagen de fondo de toda la página en vez del degradado del tema). Súbelas primero con `/admin/eventos/:slug/media`. |
 | `musicaUrl` | no | URL de audio de fondo (botón play/pause, no autoplay) |
 | `emailAutomatico` | no (default `false`), solo `modo=lista` | Si `true` y hay `RESEND_API_KEY`, envía el link por correo al importar el CSV |
 | `emailAsunto` / `emailFromNombre` / `emailFromDomain` | no | Personalización del correo de invitación |

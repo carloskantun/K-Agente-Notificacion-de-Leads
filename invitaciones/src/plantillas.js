@@ -197,6 +197,17 @@ function estilos(tema, evento) {
     pointer-events: none;
     user-select: none;
   }
+  .hero-marco {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    z-index: 2;
+    pointer-events: none;
+    user-select: none;
+  }
   .divisor-ornamental { display: block; margin: 12px auto 0; color: var(--acento); }
 
   .hero-contenido .icono { font-size: 2.6rem; }
@@ -517,6 +528,12 @@ function estilos(tema, evento) {
 function decoracionEsquinas(decoracion) {
   if (!decoracion) return "";
   const partes = [];
+
+  // marco: una sola imagen que cubre todo el hero (ej. un diseño de fondo
+  // completo generado en Canva con flores arriba y vestido/ilustración abajo).
+  if (decoracion.marco) {
+    partes.push(`<img class="hero-marco" src="${escapeHtml(decoracion.marco)}" alt="">`);
+  }
 
   const superiorIzq = decoracion.esquinaSuperior || null;
   const superiorDer = decoracion.esquinaSuperiorDer || decoracion.esquinaSuperior || null;
