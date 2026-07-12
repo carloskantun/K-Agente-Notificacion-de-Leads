@@ -3,8 +3,10 @@
  * PLANTILLAS — Invitaciones Digitales
  * =============================================================================
  * Tres temas visuales (boda, XV años, aniversario) sobre un mismo esqueleto
- * de página: hero, countdown, detalles del evento, galería, mensaje y
- * RSVP (modo lista) o compuerta de contraseña (modo password).
+ * tipo "tarjeta digital": hero de foto completa, countdown flotante estilo
+ * glass, itinerario en línea de tiempo, mapa embebido, galería de foto/video
+ * con lightbox, mensaje y RSVP (modo lista) o compuerta de contraseña (modo
+ * password).
  *
  * Todo el contenido dinámico se escapa con escapeHtml antes de insertarse.
  */
@@ -81,16 +83,17 @@ export function temaDe(tipo) {
 export function renderPagina({ evento, invitado, codigoInvalido, desbloqueado, errorClave }) {
   const tema = temaDe(evento.tipo);
   const titulo = escapeHtml(evento.titulo || "Invitación");
+  const fotoFondo = evento.fotoPortada || primeraFotoGaleria(evento);
 
   const mostrarContenido = evento.modo === "lista" ? true : !!desbloqueado;
 
   let cuerpo;
   if (evento.modo === "password" && !desbloqueado) {
-    cuerpo = renderCompuertaPassword(evento, tema, errorClave);
+    cuerpo = renderCompuertaPassword(evento, tema, errorClave, fotoFondo);
   } else if (evento.modo === "lista" && codigoInvalido) {
     cuerpo = renderInvitacionNoEncontrada(evento, tema);
   } else {
-    cuerpo = renderContenidoEvento(evento, tema, invitado);
+    cuerpo = renderContenidoEvento(evento, tema, invitado, fotoFondo);
   }
 
   return `<!DOCTYPE html>
@@ -105,8 +108,15 @@ ${estilos(tema)}
 <body>
 ${cuerpo}
 ${mostrarContenido && evento.mostrarCountdown !== false && evento.fechaEvento ? scriptCountdown(evento.fechaEvento) : ""}
+${mostrarContenido ? scriptLightbox() : ""}
 </body>
 </html>`;
+}
+
+function primeraFotoGaleria(evento) {
+  const galeria = Array.isArray(evento.galeria) ? evento.galeria : [];
+  const foto = galeria.find((item) => item.tipo !== "video");
+  return foto ? foto.url : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -121,6 +131,7 @@ function estilos(tema) {
     --acento: ${tema.colorAcento};
     --texto: ${tema.colorTexto};
     --tarjeta: ${tema.tarjetaFondo};
+    --fuente-titulo: ${tema.fuenteTitulo};
   }
   * { box-sizing: border-box; }
   body {
@@ -129,122 +140,291 @@ function estilos(tema) {
     background: ${tema.gradiente};
     font-family: ${tema.fuenteTexto};
     color: var(--texto);
+  }
+  .contenedor { width: 100%; max-width: 640px; margin: 0 auto; padding: 0 20px 48px; }
+
+  /* ── Hero ─────────────────────────────────────────────────────────── */
+  .hero-foto {
+    position: relative;
+    min-height: 62vh;
+    background-size: cover;
+    background-position: center;
     display: flex;
+    align-items: flex-end;
     justify-content: center;
-    padding: 0 0 48px;
+    padding: 80px 20px 40px;
+    overflow: hidden;
   }
-  .contenedor { width: 100%; max-width: 640px; padding: 0 20px; }
-  .hero {
-    text-align: center;
-    padding: 64px 16px 32px;
+  .hero-foto::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0.75) 100%);
   }
-  .hero .icono { font-size: 2.6rem; }
-  .hero h1 {
-    font-family: ${tema.fuenteTitulo};
-    font-size: clamp(2.2rem, 7vw, 3.4rem);
-    color: var(--primario);
+  .hero-foto .hero-contenido { position: relative; z-index: 2; text-align: center; color: #fff; }
+  .hero-foto .hero-contenido h1 { color: #fff; text-shadow: 0 2px 18px rgba(0,0,0,0.35); }
+  .hero-foto .hero-etiqueta { color: #f4e9c8; }
+
+  .hero-plana { text-align: center; padding: 64px 16px 32px; }
+  .hero-plana h1 { color: var(--primario); }
+
+  .hero-contenido .icono { font-size: 2.6rem; }
+  .hero-contenido h1 {
+    font-family: var(--fuente-titulo);
+    font-size: clamp(2.2rem, 7vw, 3.6rem);
     margin: 8px 0 4px;
   }
-  .hero .etiqueta {
-    letter-spacing: 0.14em;
+  .hero-etiqueta {
+    letter-spacing: 0.16em;
     text-transform: uppercase;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     color: var(--acento);
     margin-bottom: 6px;
+    font-weight: 600;
   }
-  .hero .subtitulo { font-size: 1.05rem; opacity: 0.85; }
+  .hero-subtitulo { font-size: 1.05rem; opacity: 0.9; margin: 4px 0 0; }
+
+  /* ── Countdown flotante (glass) ──────────────────────────────────────── */
+  .countdown-flotante {
+    position: relative;
+    z-index: 5;
+    max-width: 480px;
+    margin: -56px auto 8px;
+    background: rgba(255,255,255,0.62);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.65);
+    border-radius: 22px;
+    padding: 22px 10px;
+    display: flex;
+    justify-content: space-around;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.16);
+  }
+  .countdown-flotante .cd-item { text-align: center; min-width: 56px; }
+  .countdown-flotante .cd-num {
+    font-family: var(--fuente-titulo);
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: var(--primario);
+    display: block;
+    line-height: 1;
+  }
+  .countdown-flotante .cd-label {
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--texto);
+    opacity: 0.72;
+  }
+
   .separador {
     text-align: center;
     color: var(--acento);
     font-size: 1.2rem;
-    margin: 8px 0 28px;
+    margin: 20px 0 24px;
     letter-spacing: 0.5em;
   }
+
+  /* ── Tarjetas ─────────────────────────────────────────────────────────── */
   .tarjeta {
     background: var(--tarjeta);
     border: 1px solid rgba(0,0,0,0.06);
-    border-radius: 18px;
+    border-radius: 20px;
     padding: 28px 24px;
-    margin-bottom: 24px;
-    backdrop-filter: blur(4px);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+    margin-bottom: 22px;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.07);
+  }
+  .eyebrow {
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--acento);
+    margin-bottom: 6px;
   }
   .tarjeta h2 {
-    font-family: ${tema.fuenteTitulo};
+    font-family: var(--fuente-titulo);
     color: var(--primario);
     margin-top: 0;
+    margin-bottom: 18px;
     font-size: 1.5rem;
-  }
-  .countdown {
-    display: flex;
-    justify-content: center;
-    gap: 14px;
-    margin: 24px 0;
-    flex-wrap: wrap;
-  }
-  .countdown .bloque {
-    background: var(--primario);
-    color: #fff;
-    border-radius: 12px;
-    padding: 12px 16px;
-    min-width: 70px;
     text-align: center;
   }
-  .countdown .bloque .numero { font-size: 1.6rem; font-weight: 700; display: block; }
-  .countdown .bloque .etiqueta { font-size: 0.7rem; text-transform: uppercase; opacity: 0.85; }
+
+  /* ── Itinerario (timeline) ───────────────────────────────────────────── */
+  .timeline { position: relative; }
+  .timeline-item { display: flex; gap: 16px; position: relative; padding-bottom: 26px; }
+  .timeline-item:last-child { padding-bottom: 0; }
+  .timeline-item:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    left: 19px;
+    top: 40px;
+    bottom: -26px;
+    width: 2px;
+    background: var(--acento);
+    opacity: 0.3;
+  }
+  .timeline-marcador {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--primario);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    flex-shrink: 0;
+    z-index: 2;
+  }
+  .timeline-contenido { padding-top: 4px; }
+  .timeline-hora {
+    font-weight: 700;
+    color: var(--acento);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .timeline-titulo { font-family: var(--fuente-titulo); font-size: 1.15rem; color: var(--primario); margin-top: 2px; }
+  .timeline-desc { opacity: 0.82; font-size: 0.92rem; margin-top: 4px; line-height: 1.5; }
+
   .detalle-fila { display: flex; gap: 12px; margin-bottom: 14px; align-items: flex-start; }
+  .detalle-fila:last-child { margin-bottom: 0; }
   .detalle-fila .icono-detalle { font-size: 1.3rem; }
   .detalle-fila .titulo-detalle { font-weight: 600; color: var(--primario); }
   .detalle-fila .texto-detalle { opacity: 0.9; line-height: 1.4; }
-  .galeria {
+
+  /* ── Mapa ─────────────────────────────────────────────────────────────── */
+  .mapa-item { margin-bottom: 18px; }
+  .mapa-item:last-child { margin-bottom: 0; }
+  .mapa-titulo { font-weight: 700; color: var(--primario); margin-bottom: 8px; }
+  .mapa-embed {
+    border-radius: 16px;
+    overflow: hidden;
+    aspect-ratio: 16 / 9;
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+  .mapa-embed iframe { width: 100%; height: 100%; border: 0; display: block; }
+  .mapa-boton {
+    display: inline-block;
+    margin-top: 8px;
+    color: var(--primario);
+    font-weight: 700;
+    text-decoration: none;
+    font-size: 0.88rem;
+  }
+
+  /* ── Galería + lightbox ──────────────────────────────────────────────── */
+  .galeria-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 10px;
-    margin-bottom: 24px;
   }
-  .galeria img {
-    width: 100%;
-    height: 160px;
-    object-fit: cover;
-    border-radius: 12px;
+  .galeria-item {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    background: rgba(0,0,0,0.05);
   }
+  .galeria-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s ease; }
+  .galeria-item:hover img { transform: scale(1.06); }
+  .galeria-item .play-badge {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    color: #fff;
+    background: rgba(0,0,0,0.28);
+  }
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(10,10,10,0.92);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 24px;
+  }
+  .lightbox[hidden] { display: none; }
+  .lightbox-contenido img, .lightbox-contenido video {
+    max-width: 90vw;
+    max-height: 85vh;
+    border-radius: 10px;
+    display: block;
+  }
+  .lightbox-cerrar {
+    position: absolute;
+    top: 18px;
+    right: 22px;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 1.1rem;
+    cursor: pointer;
+  }
+
   .mensaje { text-align: center; font-style: italic; line-height: 1.6; }
+
+  /* ── Formularios ──────────────────────────────────────────────────────── */
   form.rsvp, form.clave { display: flex; flex-direction: column; gap: 14px; }
   label { font-weight: 600; font-size: 0.9rem; }
   input[type="text"], input[type="password"], input[type="number"], select {
-    padding: 10px 12px;
-    border-radius: 10px;
+    padding: 11px 12px;
+    border-radius: 12px;
     border: 1px solid rgba(0,0,0,0.15);
     font-size: 1rem;
     font-family: inherit;
   }
-  .opciones-asistencia { display: flex; gap: 12px; }
+  .opciones-asistencia {
+    display: flex;
+    gap: 6px;
+    background: rgba(0,0,0,0.045);
+    padding: 5px;
+    border-radius: 16px;
+  }
   .opciones-asistencia label {
+    position: relative;
     flex: 1;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
-    background: rgba(0,0,0,0.03);
-    padding: 10px 12px;
-    border-radius: 10px;
+    padding: 12px;
+    border-radius: 12px;
     cursor: pointer;
-    font-weight: 500;
+    font-weight: 600;
+    transition: background 0.15s, color 0.15s;
   }
+  .opciones-asistencia input { position: absolute; opacity: 0; pointer-events: none; }
+  .opciones-asistencia label.seleccionado { background: var(--primario); color: #fff; }
   button {
     background: var(--primario);
     color: #fff;
     border: none;
-    padding: 13px;
-    border-radius: 12px;
+    padding: 14px;
+    border-radius: 14px;
     font-size: 1rem;
     cursor: pointer;
-    font-weight: 600;
+    font-weight: 700;
   }
   button:hover { filter: brightness(1.08); }
   .estado {
     text-align: center;
     padding: 10px;
-    border-radius: 10px;
+    border-radius: 12px;
     font-weight: 600;
     margin-bottom: 14px;
   }
@@ -253,6 +433,18 @@ function estilos(tema) {
   .error { color: #a02020; font-size: 0.9rem; text-align: center; }
   .footer { text-align: center; opacity: 0.6; font-size: 0.8rem; margin-top: 32px; }
   .no-encontrada { text-align: center; padding: 80px 16px; }
+
+  .boton-musica {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    border-radius: 50%;
+    width: 52px;
+    height: 52px;
+    padding: 0;
+    z-index: 10;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  }
 </style>`;
 }
 
@@ -260,16 +452,21 @@ function estilos(tema) {
 // SECCIONES
 // ---------------------------------------------------------------------------
 
-function renderCompuertaPassword(evento, tema, errorClave) {
+function renderCompuertaPassword(evento, tema, errorClave, fotoFondo) {
   const titulo = escapeHtml(evento.titulo || "Invitación");
-  return `<div class="contenedor">
-  <div class="hero">
+  const heroInterno = `
     <div class="icono">${tema.icono}</div>
-    <div class="etiqueta">${escapeHtml(tema.etiqueta)}</div>
+    <div class="hero-etiqueta">${escapeHtml(tema.etiqueta)}</div>
     <h1>${titulo}</h1>
-    <p class="subtitulo">Esta invitación es privada. Ingresa la contraseña para verla.</p>
-  </div>
-  <div class="tarjeta">
+    <p class="hero-subtitulo">Esta invitación es privada. Ingresa la contraseña para verla.</p>`;
+
+  const hero = fotoFondo
+    ? `<div class="hero-foto" style="background-image:url('${escapeHtml(fotoFondo)}')"><div class="hero-contenido">${heroInterno}</div></div>`
+    : `<div class="hero-plana"><div class="hero-contenido">${heroInterno}</div></div>`;
+
+  return `${hero}
+<div class="contenedor">
+  <div class="tarjeta" style="margin-top:${fotoFondo ? "-40px" : "0"};position:relative;z-index:5;">
     <form class="clave" id="form-clave">
       <label for="clave">Contraseña</label>
       <input type="password" id="clave" name="clave" required autofocus>
@@ -306,11 +503,26 @@ function renderInvitacionNoEncontrada(evento, tema) {
 </div>`;
 }
 
-function renderContenidoEvento(evento, tema, invitado) {
-  return `<div class="contenedor">
-  ${seccionHero(evento, tema)}
-  ${seccionCountdown(evento)}
+function renderContenidoEvento(evento, tema, invitado, fotoFondo) {
+  const heroInterno = `
+    <div class="icono">${tema.icono}</div>
+    <div class="hero-etiqueta">${escapeHtml(tema.etiqueta)}</div>
+    <h1>${escapeHtml(evento.titulo || "")}</h1>
+    ${evento.subtitulo ? `<p class="hero-subtitulo">${escapeHtml(evento.subtitulo)}</p>` : ""}`;
+
+  const hero = fotoFondo
+    ? `<div class="hero-foto" style="background-image:url('${escapeHtml(fotoFondo)}')"><div class="hero-contenido">${heroInterno}</div></div>`
+    : `<div class="hero-plana"><div class="hero-contenido">${heroInterno}</div></div>`;
+
+  const countdown = seccionCountdown(evento);
+
+  return `${hero}
+${countdown}
+<div class="contenedor">
+  ${countdown ? "" : `<div class="separador">${tema.separador} ${tema.separador} ${tema.separador}</div>`}
+  ${seccionItinerario(evento, tema)}
   ${seccionDetalles(evento, tema)}
+  ${seccionMapa(evento, tema)}
   ${seccionGaleria(evento)}
   ${seccionMensaje(evento)}
   ${evento.modo === "lista" ? seccionRSVP(evento, invitado) : ""}
@@ -319,49 +531,75 @@ function renderContenidoEvento(evento, tema, invitado) {
 </div>`;
 }
 
-function seccionHero(evento, tema) {
-  return `<div class="hero">
-    <div class="icono">${tema.icono}</div>
-    <div class="etiqueta">${escapeHtml(tema.etiqueta)}</div>
-    <h1>${escapeHtml(evento.titulo || "")}</h1>
-    ${evento.subtitulo ? `<p class="subtitulo">${escapeHtml(evento.subtitulo)}</p>` : ""}
-  </div>
-  <div class="separador">${tema.separador} ${tema.separador} ${tema.separador}</div>`;
-}
-
 function seccionCountdown(evento) {
   if (evento.mostrarCountdown === false || !evento.fechaEvento) return "";
-  return `<div class="countdown" id="countdown">
-    <div class="bloque"><span class="numero" id="cd-dias">--</span><span class="etiqueta">Días</span></div>
-    <div class="bloque"><span class="numero" id="cd-horas">--</span><span class="etiqueta">Horas</span></div>
-    <div class="bloque"><span class="numero" id="cd-min">--</span><span class="etiqueta">Min</span></div>
-    <div class="bloque"><span class="numero" id="cd-seg">--</span><span class="etiqueta">Seg</span></div>
+  return `<div class="countdown-flotante" id="countdown">
+    <div class="cd-item"><span class="cd-num" id="cd-dias">--</span><span class="cd-label">Días</span></div>
+    <div class="cd-item"><span class="cd-num" id="cd-horas">--</span><span class="cd-label">Horas</span></div>
+    <div class="cd-item"><span class="cd-num" id="cd-min">--</span><span class="cd-label">Min</span></div>
+    <div class="cd-item"><span class="cd-num" id="cd-seg">--</span><span class="cd-label">Seg</span></div>
+  </div>`;
+}
+
+/**
+ * Construye el itinerario a mostrar: usa evento.itinerario si existe, o lo
+ * arma automáticamente a partir de los campos de ceremonia/recepción para
+ * eventos configurados antes de que existiera el campo itinerario.
+ */
+function itinerarioEfectivo(evento, tema) {
+  if (Array.isArray(evento.itinerario) && evento.itinerario.length > 0) {
+    return evento.itinerario;
+  }
+  const items = [];
+  if (evento.lugarCeremonia || evento.horaCeremonia) {
+    items.push({
+      hora: evento.horaCeremonia || "",
+      titulo: tema.etiquetaPrincipal,
+      descripcion: [evento.lugarCeremonia, evento.direccionCeremonia].filter(Boolean).join(" — "),
+      icono: "📍",
+    });
+  }
+  if (evento.lugarRecepcion || evento.horaRecepcion) {
+    items.push({
+      hora: evento.horaRecepcion || "",
+      titulo: tema.etiquetaSecundaria,
+      descripcion: [evento.lugarRecepcion, evento.direccionRecepcion].filter(Boolean).join(" — "),
+      icono: "🥂",
+    });
+  }
+  return items;
+}
+
+function seccionItinerario(evento, tema) {
+  const items = itinerarioEfectivo(evento, tema);
+  if (items.length === 0) return "";
+
+  const filas = items
+    .map(
+      (item) => `<div class="timeline-item">
+        <div class="timeline-marcador">${escapeHtml(item.icono || "•")}</div>
+        <div class="timeline-contenido">
+          ${item.hora ? `<div class="timeline-hora">${escapeHtml(item.hora)}</div>` : ""}
+          <div class="timeline-titulo">${escapeHtml(item.titulo || "")}</div>
+          ${item.descripcion ? `<div class="timeline-desc">${escapeHtml(item.descripcion)}</div>` : ""}
+        </div>
+      </div>`
+    )
+    .join("");
+
+  return `<div class="tarjeta">
+    <div class="eyebrow">${tema.separador} Programa ${tema.separador}</div>
+    <h2>Itinerario</h2>
+    <div class="timeline">${filas}</div>
   </div>`;
 }
 
 function seccionDetalles(evento, tema) {
   const filas = [];
 
-  if (evento.lugarCeremonia || evento.horaCeremonia) {
-    filas.push(filaDetalle("📍", tema.etiquetaPrincipal, [
-      evento.lugarCeremonia,
-      evento.direccionCeremonia,
-      evento.horaCeremonia ? `Hora: ${evento.horaCeremonia}` : null,
-    ]));
-  }
-
-  if (evento.lugarRecepcion || evento.horaRecepcion) {
-    filas.push(filaDetalle("🥂", tema.etiquetaSecundaria, [
-      evento.lugarRecepcion,
-      evento.direccionRecepcion,
-      evento.horaRecepcion ? `Hora: ${evento.horaRecepcion}` : null,
-    ]));
-  }
-
   if (evento.codigoVestimenta) {
     filas.push(filaDetalle("👗", "Código de vestimenta", [evento.codigoVestimenta]));
   }
-
   if (evento.mesaDeRegalos) {
     filas.push(filaDetalle("🎁", "Mesa de regalos", [evento.mesaDeRegalos]));
   }
@@ -386,13 +624,61 @@ function filaDetalle(icono, titulo, lineas) {
   </div>`;
 }
 
+function seccionMapa(evento, tema) {
+  const items = [];
+  if (evento.mapaCeremonia) items.push({ etiqueta: tema.etiquetaPrincipal, direccion: evento.mapaCeremonia });
+  if (evento.mapaRecepcion) items.push({ etiqueta: tema.etiquetaSecundaria, direccion: evento.mapaRecepcion });
+  if (items.length === 0) return "";
+
+  const mapas = items.map((item) => mapaEmbed(item.etiqueta, item.direccion)).join("");
+
+  return `<div class="tarjeta">
+    <div class="eyebrow">${tema.separador} Ubicación ${tema.separador}</div>
+    <h2>Cómo llegar</h2>
+    ${mapas}
+  </div>`;
+}
+
+function mapaEmbed(etiqueta, direccion) {
+  const query = encodeURIComponent(direccion);
+  return `<div class="mapa-item">
+    <div class="mapa-titulo">📍 ${escapeHtml(etiqueta)}</div>
+    <div class="mapa-embed">
+      <iframe src="https://maps.google.com/maps?q=${query}&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+    </div>
+    <a class="mapa-boton" href="https://www.google.com/maps/dir/?api=1&destination=${query}" target="_blank" rel="noopener">Cómo llegar →</a>
+  </div>`;
+}
+
 function seccionGaleria(evento) {
-  const fotos = Array.isArray(evento.fotos) ? evento.fotos.slice(0, 8) : [];
-  if (fotos.length === 0) return "";
-  const imgs = fotos
-    .map((url) => `<img src="${escapeHtml(url)}" alt="Foto del evento" loading="lazy">`)
+  const items = Array.isArray(evento.galeria) ? evento.galeria.slice(0, 24) : [];
+  if (items.length === 0) return "";
+
+  const botones = items
+    .map((item) => {
+      const url = escapeHtml(item.url);
+      if (item.tipo === "video") {
+        const poster = escapeHtml(item.poster || item.url);
+        return `<button type="button" class="galeria-item" data-tipo="video" data-src="${url}">
+          <img src="${poster}" alt="" loading="lazy">
+          <span class="play-badge">▶</span>
+        </button>`;
+      }
+      return `<button type="button" class="galeria-item" data-tipo="foto" data-src="${url}">
+        <img src="${url}" alt="" loading="lazy">
+      </button>`;
+    })
     .join("");
-  return `<div class="galeria">${imgs}</div>`;
+
+  return `<div class="tarjeta">
+    <div class="eyebrow">Galería</div>
+    <h2>Momentos</h2>
+    <div class="galeria-grid">${botones}</div>
+  </div>
+  <div class="lightbox" id="lightbox" hidden>
+    <button type="button" class="lightbox-cerrar" id="lightbox-cerrar">✕</button>
+    <div class="lightbox-contenido" id="lightbox-contenido"></div>
+  </div>`;
 }
 
 function seccionMensaje(evento) {
@@ -403,7 +689,7 @@ function seccionMensaje(evento) {
 function seccionMusica(evento) {
   if (!evento.musicaUrl) return "";
   return `<audio id="musica-evento" src="${escapeHtml(evento.musicaUrl)}" loop></audio>
-  <button type="button" id="btn-musica" style="position:fixed;bottom:20px;right:20px;border-radius:50%;width:52px;height:52px;padding:0;z-index:10;">🎵</button>
+  <button type="button" id="btn-musica" class="boton-musica">🎵</button>
   <script>
   (function() {
     var audio = document.getElementById('musica-evento');
@@ -435,13 +721,14 @@ function seccionRSVP(evento, invitado) {
     .join("");
 
   return `<div class="tarjeta">
+    <div class="eyebrow">RSVP</div>
     <h2>Confirma tu asistencia</h2>
     <p>Hola <strong>${escapeHtml(invitado.nombre)}</strong>, tienes <strong>${invitado.pases}</strong> ${invitado.pases === 1 ? "pase" : "pases"} asignado${invitado.pases === 1 ? "" : "s"}.</p>
     ${estadoHtml}
     <form class="rsvp" id="form-rsvp">
-      <div class="opciones-asistencia">
-        <label><input type="radio" name="asistencia" value="si" ${invitado.confirmado === true ? "checked" : ""} required> Sí asistiré</label>
-        <label><input type="radio" name="asistencia" value="no" ${invitado.confirmado === false ? "checked" : ""}> No podré ir</label>
+      <div class="opciones-asistencia" id="opciones-asistencia">
+        <label class="${invitado.confirmado === true ? "seleccionado" : ""}"><input type="radio" name="asistencia" value="si" ${invitado.confirmado === true ? "checked" : ""} required> Sí asistiré</label>
+        <label class="${invitado.confirmado === false ? "seleccionado" : ""}"><input type="radio" name="asistencia" value="no" ${invitado.confirmado === false ? "checked" : ""}> No podré ir</label>
       </div>
       <div id="grupo-pases" style="${invitado.confirmado === false ? "display:none;" : ""}">
         <label for="pases">¿Cuántos de tus pases confirmas?</label>
@@ -454,8 +741,12 @@ function seccionRSVP(evento, invitado) {
   (function() {
     var form = document.getElementById('form-rsvp');
     var grupoPases = document.getElementById('grupo-pases');
+    var opciones = document.getElementById('opciones-asistencia');
     form.querySelectorAll('input[name="asistencia"]').forEach(function(input) {
       input.addEventListener('change', function() {
+        opciones.querySelectorAll('label').forEach(function(label) {
+          label.classList.toggle('seleccionado', label.querySelector('input').checked);
+        });
         grupoPases.style.display = form.querySelector('input[name="asistencia"]:checked').value === 'si' ? 'block' : 'none';
       });
     });
@@ -502,6 +793,37 @@ function scriptCountdown(fechaISO) {
   }
   actualizar();
   var intervalo = setInterval(actualizar, 1000);
+})();
+</script>`;
+}
+
+function scriptLightbox() {
+  return `<script>
+(function() {
+  var lightbox = document.getElementById('lightbox');
+  if (!lightbox) return;
+  var contenido = document.getElementById('lightbox-contenido');
+  var cerrar = document.getElementById('lightbox-cerrar');
+
+  document.querySelectorAll('.galeria-item').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var tipo = btn.getAttribute('data-tipo');
+      var src = btn.getAttribute('data-src');
+      contenido.innerHTML = tipo === 'video'
+        ? '<video src="' + src + '" controls autoplay playsinline></video>'
+        : '<img src="' + src + '" alt="">';
+      lightbox.hidden = false;
+    });
+  });
+
+  function cerrarLightbox() {
+    lightbox.hidden = true;
+    contenido.innerHTML = '';
+  }
+  cerrar.addEventListener('click', cerrarLightbox);
+  lightbox.addEventListener('click', function(e) {
+    if (e.target === lightbox) cerrarLightbox();
+  });
 })();
 </script>`;
 }

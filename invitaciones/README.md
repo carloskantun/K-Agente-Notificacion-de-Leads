@@ -29,16 +29,19 @@ npm install
 npx wrangler kv namespace create INVITACIONES_KV
 npx wrangler kv namespace create INVITACIONES_KV --preview
 
-# 2. Copia la plantilla y pega los IDs que te dio el comando anterior
+# 2. Crea el bucket R2 para fotos/video (portada + galería)
+npx wrangler r2 bucket create invitaciones-media
+
+# 3. Copia la plantilla y pega los IDs que te dio el comando de KV
 cp wrangler.toml.template wrangler.toml
 # Edita wrangler.toml: {{KV_NAMESPACE_ID}}, {{KV_NAMESPACE_PREVIEW_ID}}, {{EMAIL_FROM_DOMAIN}}
 
-# 3. Carga los secrets
+# 4. Carga los secrets
 npx wrangler secret put ADMIN_TOKEN        # protege todas las rutas /admin/*
 npx wrangler secret put SESSION_SECRET     # pepper de contraseñas + firma de cookies
 npx wrangler secret put RESEND_API_KEY     # opcional, solo si algún evento usa email automático
 
-# 4. Despliega
+# 5. Despliega
 npx wrangler deploy
 ```
 
@@ -66,7 +69,17 @@ curl -X POST https://TU-WORKER.workers.dev/admin/eventos \
     "horaRecepcion": "19:00",
     "codigoVestimenta": "Formal",
     "mensaje": "Con la bendición de Dios y nuestros padres, los invitamos a celebrar con nosotros.",
-    "fotos": ["https://ejemplo.com/foto1.jpg"],
+    "fotoPortada": "https://TU-WORKER.workers.dev/media/juan-y-maria/abc123-portada.jpg",
+    "galeria": [
+      { "tipo": "foto", "url": "https://TU-WORKER.workers.dev/media/juan-y-maria/abc123-portada.jpg" },
+      { "tipo": "video", "url": "https://TU-WORKER.workers.dev/media/juan-y-maria/def456-video.mp4", "poster": "https://TU-WORKER.workers.dev/media/juan-y-maria/abc123-portada.jpg" }
+    ],
+    "itinerario": [
+      { "hora": "17:00", "titulo": "Ceremonia", "descripcion": "Parroquia San José", "icono": "⛪" },
+      { "hora": "19:00", "titulo": "Recepción", "descripcion": "Salón Jardines del Mar", "icono": "🥂" }
+    ],
+    "mapaCeremonia": "Parroquia San José, Cancún, Quintana Roo",
+    "mapaRecepcion": "Salón Jardines del Mar, Cancún, Quintana Roo",
     "emailAutomatico": false
   }'
 ```
@@ -85,15 +98,48 @@ Volver a llamar `POST /admin/eventos` con el mismo `slug` actualiza el evento
 | `clave` | solo si `modo=password` | Contraseña en texto plano — se hashea (PBKDF2) y nunca se devuelve |
 | `fechaEvento` | no | ISO 8601 con zona horaria. Activa el countdown. |
 | `mostrarCountdown` | no (default `true`) | |
-| `lugarCeremonia`/`direccionCeremonia`/`horaCeremonia` | no | Evento principal |
-| `lugarRecepcion`/`direccionRecepcion`/`horaRecepcion` | no | Segundo evento (recepción/fiesta) |
+| `fotoPortada` | no | URL de imagen de fondo del hero (ideal: subida vía `/admin/eventos/:slug/media`, ver abajo) |
+| `galeria` | no | Array `[{ tipo: "foto"\|"video", url, poster? }]` — se muestra en grid con lightbox. `poster` es la miniatura del video (si no se da, usa `url`). |
+| `itinerario` | no | Array `[{ hora, titulo, descripcion?, icono? }]` — se muestra como línea de tiempo. Si se omite, se arma automáticamente con `lugarCeremonia`/`lugarRecepcion` (compatibilidad con eventos creados antes de este campo). |
+| `mapaCeremonia` / `mapaRecepcion` | no | Dirección de texto (ej. `"Parroquia San José, Cancún"`) — se embebe como mapa de Google Maps interactivo + botón "Cómo llegar". No requiere API key de Google. |
+| `lugarCeremonia`/`direccionCeremonia`/`horaCeremonia` | no | Usado para el itinerario automático si no defines `itinerario` |
+| `lugarRecepcion`/`direccionRecepcion`/`horaRecepcion` | no | Ídem, segundo punto del itinerario automático |
 | `codigoVestimenta` | no | |
 | `mesaDeRegalos` | no | Texto libre (link o instrucciones) |
 | `mensaje` | no | Mensaje/dedicatoria de los anfitriones |
-| `fotos` | no | Array de URLs de imágenes (galería, máx. 8) |
 | `musicaUrl` | no | URL de audio de fondo (botón play/pause, no autoplay) |
 | `emailAutomatico` | no (default `false`), solo `modo=lista` | Si `true` y hay `RESEND_API_KEY`, envía el link por correo al importar el CSV |
 | `emailAsunto` / `emailFromNombre` / `emailFromDomain` | no | Personalización del correo de invitación |
+
+---
+
+## Subir fotos y video (portada + galería)
+
+Las fotos y videos se suben directo al Worker, que los guarda en un bucket R2
+propio y los sirve desde `/media/:slug/:archivo`. No necesitas ningún hosting
+externo.
+
+```bash
+curl -X POST https://TU-WORKER.workers.dev/admin/eventos/juan-y-maria/media \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: image/jpeg" \
+  -H "X-Filename: portada.jpg" \
+  --data-binary @portada.jpg
+```
+
+Respuesta:
+
+```json
+{ "success": true, "tipo": "foto", "url": "https://TU-WORKER.workers.dev/media/juan-y-maria/a1b2c3d4-portada.jpg", "archivo": "a1b2c3d4-portada.jpg" }
+```
+
+Usa esa `url` en `fotoPortada` o dentro de `galeria` al crear/actualizar el evento.
+Mismo endpoint sirve para video, solo cambia `Content-Type` (`video/mp4`, `video/webm`
+o `video/quicktime`) — el Worker detecta el tipo automáticamente.
+
+- **Tipos permitidos:** `image/jpeg`, `image/png`, `image/webp`, `image/gif`, `video/mp4`, `video/webm`, `video/quicktime`.
+- **Límites de tamaño:** 15MB por foto, 100MB por video.
+- **Borrar un archivo:** `DELETE /admin/eventos/:slug/media/:archivo` (mismo Authorization).
 
 ---
 
@@ -187,6 +233,9 @@ firmada (HMAC, 12 horas) para no pedirla en cada visita.
 | POST | `/admin/eventos/:slug/csv` | Bearer | Importa invitados (CSV en el body) |
 | GET | `/admin/eventos/:slug/invitados` | Bearer | Lista + resumen de RSVPs (JSON) |
 | GET | `/admin/eventos/:slug/invitados.csv` | Bearer | Exporta RSVPs (CSV) |
+| POST | `/admin/eventos/:slug/media` | Bearer | Sube una foto/video (body binario, ver arriba) |
+| DELETE | `/admin/eventos/:slug/media/:archivo` | Bearer | Elimina un archivo de R2 |
+| GET | `/media/:slug/:archivo` | — | Sirve el archivo subido |
 
 Prueba rápida end-to-end: `BASE_URL=http://localhost:8787 ADMIN_TOKEN=dev-token bash test/test-invitacion.sh`
 (con `npx wrangler dev` corriendo en otra terminal).

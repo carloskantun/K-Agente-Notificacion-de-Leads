@@ -26,6 +26,11 @@
  *   POST   /admin/eventos/:slug/csv          → importa invitados desde CSV
  *   GET    /admin/eventos/:slug/invitados    → lista invitados + estado RSVP (JSON)
  *   GET    /admin/eventos/:slug/invitados.csv→ exporta invitados + estado RSVP (CSV)
+ *   POST   /admin/eventos/:slug/media        → sube una foto/video a R2 (body binario)
+ *   DELETE /admin/eventos/:slug/media/:file  → elimina un archivo de R2
+ *
+ * RUTA PÚBLICA DE MEDIOS:
+ *   GET /media/:slug/:file                   → sirve el archivo subido a R2
  *
  * Secrets (wrangler secret put):
  *   ADMIN_TOKEN       Token para todas las rutas /admin/*
@@ -239,7 +244,14 @@ async function manejarCrearEvento(request, env) {
     codigoVestimenta: body.codigoVestimenta ?? existente?.codigoVestimenta ?? "",
     mesaDeRegalos: body.mesaDeRegalos ?? existente?.mesaDeRegalos ?? "",
     mensaje: body.mensaje ?? existente?.mensaje ?? "",
-    fotos: body.fotos ?? existente?.fotos ?? [],
+    fotoPortada: body.fotoPortada ?? existente?.fotoPortada ?? "",
+    // galeria: [{ tipo: "foto"|"video", url, poster? }]
+    galeria: body.galeria ?? existente?.galeria ?? [],
+    // itinerario: [{ hora, titulo, descripcion?, icono? }]
+    itinerario: body.itinerario ?? existente?.itinerario ?? [],
+    // Dirección de texto para el mapa embebido (Google Maps sin API key)
+    mapaCeremonia: body.mapaCeremonia ?? existente?.mapaCeremonia ?? "",
+    mapaRecepcion: body.mapaRecepcion ?? existente?.mapaRecepcion ?? "",
     musicaUrl: body.musicaUrl ?? existente?.musicaUrl ?? null,
     emailAutomatico: body.emailAutomatico ?? existente?.emailAutomatico ?? false,
     emailAsunto: body.emailAsunto ?? existente?.emailAsunto ?? "Estás invitado — {{titulo}}",
@@ -387,6 +399,91 @@ function csvEscape(valor) {
 }
 
 // ---------------------------------------------------------------------------
+// MEDIOS — subida y servido vía R2 (fotos/video de la galería y portada)
+// ---------------------------------------------------------------------------
+
+const TIPOS_MIME_PERMITIDOS = {
+  "image/jpeg": "foto",
+  "image/png": "foto",
+  "image/webp": "foto",
+  "image/gif": "foto",
+  "video/mp4": "video",
+  "video/webm": "video",
+  "video/quicktime": "video",
+};
+
+const MAX_TAMANO_FOTO = 15 * 1024 * 1024; // 15MB
+const MAX_TAMANO_VIDEO = 100 * 1024 * 1024; // 100MB
+
+function sanitizarNombreArchivo(nombre) {
+  return String(nombre || "archivo")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9.\-_]/g, "-")
+    .slice(0, 80);
+}
+
+async function manejarSubirMedia(request, env, slug) {
+  if (!env.INVITACIONES_MEDIA) {
+    return jsonResponse({ error: "Almacenamiento de medios no configurado (falta el binding R2)." }, 500);
+  }
+
+  const evento = await obtenerEvento(env.INVITACIONES_KV, slug);
+  if (!evento) return jsonResponse({ error: "Evento no encontrado." }, 404);
+
+  const contentType = (request.headers.get("Content-Type") || "").split(";")[0].trim().toLowerCase();
+  const tipo = TIPOS_MIME_PERMITIDOS[contentType];
+  if (!tipo) {
+    return jsonResponse(
+      { error: `Tipo de archivo no permitido: ${contentType || "desconocido"}. Usa JPEG, PNG, WEBP, GIF, MP4, WEBM o MOV.` },
+      415
+    );
+  }
+
+  const contentLength = parseInt(request.headers.get("Content-Length") || "0", 10);
+  const limite = tipo === "video" ? MAX_TAMANO_VIDEO : MAX_TAMANO_FOTO;
+  if (contentLength && contentLength > limite) {
+    return jsonResponse({ error: `El archivo excede el límite de ${Math.round(limite / 1024 / 1024)}MB.` }, 413);
+  }
+
+  const nombreOriginal = sanitizarNombreArchivo(request.headers.get("X-Filename") || `${tipo}-${Date.now()}`);
+  const nombreArchivo = `${crypto.randomUUID().slice(0, 8)}-${nombreOriginal}`;
+  const key = `${slug}/${nombreArchivo}`;
+
+  await env.INVITACIONES_MEDIA.put(key, request.body, {
+    httpMetadata: { contentType },
+  });
+
+  const url = `${new URL(request.url).origin}/media/${slug}/${nombreArchivo}`;
+  return jsonResponse({ success: true, tipo, url, archivo: nombreArchivo }, 201);
+}
+
+async function manejarServirMedia(env, slug, archivo) {
+  if (!env.INVITACIONES_MEDIA) return jsonResponse({ error: "No encontrado." }, 404);
+
+  const objeto = await env.INVITACIONES_MEDIA.get(`${slug}/${archivo}`);
+  if (!objeto) return jsonResponse({ error: "Archivo no encontrado." }, 404);
+
+  return new Response(objeto.body, {
+    status: 200,
+    headers: {
+      "Content-Type": objeto.httpMetadata?.contentType || "application/octet-stream",
+      "Cache-Control": "public, max-age=31536000, immutable",
+      ...SECURITY_HEADERS,
+    },
+  });
+}
+
+async function manejarEliminarMedia(env, slug, archivo) {
+  if (!env.INVITACIONES_MEDIA) {
+    return jsonResponse({ error: "Almacenamiento de medios no configurado (falta el binding R2)." }, 500);
+  }
+  await env.INVITACIONES_MEDIA.delete(`${slug}/${archivo}`);
+  return jsonResponse({ success: true });
+}
+
+// ---------------------------------------------------------------------------
 // EMAIL — Resend (opcional, evento.emailAutomatico)
 // ---------------------------------------------------------------------------
 
@@ -457,6 +554,9 @@ export default {
     if ((m = pathname.match(/^\/evento\/([a-z0-9-]+)\/rsvp$/)) && method === "POST") {
       return manejarRSVP(request, env, m[1]);
     }
+    if ((m = pathname.match(/^\/media\/([a-z0-9-]+)\/([a-zA-Z0-9.\-_]+)$/)) && method === "GET") {
+      return manejarServirMedia(env, m[1], m[2]);
+    }
 
     // ── Rutas admin ─────────────────────────────────────────────────────────
     if (pathname === "/admin/eventos" || pathname.startsWith("/admin/eventos/")) {
@@ -479,6 +579,12 @@ export default {
       }
       if ((m = pathname.match(/^\/admin\/eventos\/([a-z0-9-]+)\/invitados\.csv$/)) && method === "GET") {
         return manejarExportarInvitadosCSV(env, m[1]);
+      }
+      if ((m = pathname.match(/^\/admin\/eventos\/([a-z0-9-]+)\/media$/)) && method === "POST") {
+        return manejarSubirMedia(request, env, m[1]);
+      }
+      if ((m = pathname.match(/^\/admin\/eventos\/([a-z0-9-]+)\/media\/([a-zA-Z0-9.\-_]+)$/)) && method === "DELETE") {
+        return manejarEliminarMedia(env, m[1], m[2]);
       }
     }
 

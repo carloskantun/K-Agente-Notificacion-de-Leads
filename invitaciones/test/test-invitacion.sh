@@ -42,6 +42,19 @@ curl -sS -X POST "$BASE_URL/admin/eventos/juan-y-maria/csv" \
   --data-binary $'nombre,pases,correo\nCarlos Ramírez,2,carlos@example.com\nLucía Torres,1,'
 echo
 
+echo -e "\n── Actualizar evento con itinerario y mapa ──"
+curl -sS -X POST "$BASE_URL/admin/eventos" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "slug": "juan-y-maria",
+    "itinerario": [
+      { "hora": "17:00", "titulo": "Ceremonia", "descripcion": "Parroquia San José", "icono": "⛪" },
+      { "hora": "19:00", "titulo": "Recepción", "descripcion": "Salón Jardines del Mar", "icono": "🥂" }
+    ],
+    "mapaCeremonia": "Parroquia San José, Cancún, Quintana Roo"
+  }'; echo
+
 echo -e "\n── (copia un 'codigo' de la respuesta anterior y pruébalo aquí) ──"
 echo "curl \"$BASE_URL/evento/juan-y-maria?c=CODIGO\""
 

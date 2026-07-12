@@ -12,12 +12,14 @@
 #   2. npx wrangler kv namespace create INVITACIONES_KV
 #      (y opcionalmente, para desarrollo local:)
 #      npx wrangler kv namespace create INVITACIONES_KV --preview
-#   3. Copia los "id" que te devuelve wrangler en los placeholders de abajo.
-#   4. cp wrangler.toml.template wrangler.toml   (y edita los placeholders)
-#   5. wrangler secret put ADMIN_TOKEN
+#   3. npx wrangler r2 bucket create invitaciones-media
+#      (el nombre del bucket es libre, ajusta bucket_name abajo si lo cambias)
+#   4. Copia los "id" que te devuelve wrangler en los placeholders de abajo.
+#   5. cp wrangler.toml.template wrangler.toml   (y edita los placeholders)
+#   6. wrangler secret put ADMIN_TOKEN
 #      wrangler secret put SESSION_SECRET
 #      wrangler secret put RESEND_API_KEY   # opcional, solo si usarás email automático
-#   6. npx wrangler deploy
+#   7. npx wrangler deploy
 # =============================================================================
 
 name = "invitaciones-digitales"
@@ -28,6 +30,11 @@ compatibility_date = "2024-09-23"
 binding = "INVITACIONES_KV"
 id = "{{KV_NAMESPACE_ID}}"
 preview_id = "{{KV_NAMESPACE_PREVIEW_ID}}"
+
+# Fotos y video subidos desde el panel admin (portada + galería)
+[[r2_buckets]]
+binding = "INVITACIONES_MEDIA"
+bucket_name = "invitaciones-media"
 
 [vars]
 EMAIL_FROM_DOMAIN = "{{EMAIL_FROM_DOMAIN}}"
