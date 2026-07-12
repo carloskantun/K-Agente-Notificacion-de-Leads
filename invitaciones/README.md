@@ -113,7 +113,8 @@ Volver a llamar `POST /admin/eventos` con el mismo `slug` actualiza el evento
 | `fechaEvento` | no | ISO 8601 con zona horaria. Activa el countdown. |
 | `mostrarCountdown` | no (default `true`) | |
 | `fotoPortada` | no | URL de imagen de fondo del hero (ideal: subida vía `/admin/eventos/:slug/media`, ver abajo) |
-| `galeria` | no | Array `[{ tipo: "foto"\|"video", url, poster? }]` — se muestra en grid con lightbox. `poster` es la miniatura del video (si no se da, usa `url`). |
+| `fotoFestejada` | no | URL de foto circular (retrato) mostrada entre el nombre y el subtítulo del hero |
+| `galeria` | no | Array `[{ tipo: "foto"\|"video", url, poster? }]` — se muestra en un carrusel (swipe/flechas) con lightbox. `poster` es la miniatura del video (si no se da: para YouTube se usa la miniatura oficial automática, para video normal se usa `url`). Un `video` cuyo `url` sea un link de YouTube (`youtube.com/watch?v=...`, `youtu.be/...`) se embebe automáticamente como iframe de YouTube en el lightbox. |
 | `itinerario` | no | Array `[{ hora, titulo, descripcion?, icono? }]` — se muestra como línea de tiempo. Si se omite, se arma automáticamente con `lugarCeremonia`/`lugarRecepcion` (compatibilidad con eventos creados antes de este campo). |
 | `mapaCeremonia` / `mapaRecepcion` | no | Dirección de texto (ej. `"Parroquia San José, Cancún"`) **o** un link completo de Google Maps (ej. `https://maps.app.goo.gl/...`). Con dirección de texto se embebe un mapa interactivo + botón "Cómo llegar"; con un link completo (no se puede embeber) solo se muestra el botón que abre ese link. No requiere API key de Google. |
 | `lugarCeremonia`/`direccionCeremonia`/`horaCeremonia` | no | Usado para el itinerario automático si no defines `itinerario` |

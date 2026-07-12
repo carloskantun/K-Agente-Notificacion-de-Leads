@@ -21,6 +21,7 @@ const TEMAS = {
     icono: "💍",
     separador: "❧",
     fuenteTitulo: "'Playfair Display', Georgia, 'Times New Roman', serif",
+    fuenteSecundaria: "'Playfair Display', Georgia, 'Times New Roman', serif",
     fuenteTexto: "Georgia, 'Times New Roman', serif",
     colorPrimario: "#292018",
     colorSecundario: "#f4ede1",
@@ -36,6 +37,7 @@ const TEMAS = {
     icono: "👑",
     separador: "✦",
     fuenteTitulo: "'Great Vibes', 'Brush Script MT', cursive",
+    fuenteSecundaria: "'Playfair Display', Georgia, serif",
     fuenteTexto: "'Poppins', Verdana, sans-serif",
     colorPrimario: "#db2777",
     colorSecundario: "#fdf2f8",
@@ -51,6 +53,7 @@ const TEMAS = {
     icono: "🥂",
     separador: "♥",
     fuenteTitulo: "'Cormorant Garamond', Georgia, serif",
+    fuenteSecundaria: "'Cormorant Garamond', Georgia, serif",
     fuenteTexto: "Verdana, Geneva, sans-serif",
     colorPrimario: "#7c2d12",
     colorSecundario: "#fef2f2",
@@ -155,6 +158,7 @@ function estilos(tema, evento) {
     --texto: ${tema.colorTexto};
     --tarjeta: ${tema.tarjetaFondo};
     --fuente-titulo: ${tema.fuenteTitulo};
+    --fuente-secundaria: ${tema.fuenteSecundaria || tema.fuenteTitulo};
   }
   * { box-sizing: border-box; }
   body {
@@ -227,6 +231,19 @@ function estilos(tema, evento) {
     user-select: none;
   }
   .divisor-ornamental { display: block; margin: 12px auto 0; color: var(--acento); }
+
+  .foto-festejada {
+    width: 108px;
+    height: 108px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin: 10px auto;
+    border: 4px solid rgba(255,255,255,0.92);
+    box-shadow: 0 0 0 2px var(--acento), 0 10px 30px rgba(0,0,0,0.22);
+    position: relative;
+    z-index: 3;
+  }
+  .foto-festejada img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
   .hero-contenido .icono { font-size: 2.6rem; }
   .hero-contenido h1 {
@@ -305,7 +322,7 @@ function estilos(tema, evento) {
     margin-bottom: 6px;
   }
   .tarjeta h2 {
-    font-family: var(--fuente-titulo);
+    font-family: var(--fuente-secundaria);
     color: var(--primario);
     margin-top: 0;
     margin-bottom: 18px;
@@ -348,7 +365,7 @@ function estilos(tema, evento) {
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
-  .timeline-titulo { font-family: var(--fuente-titulo); font-size: 1.15rem; color: var(--primario); margin-top: 2px; }
+  .timeline-titulo { font-family: var(--fuente-secundaria); font-size: 1.15rem; color: var(--primario); margin-top: 2px; }
   .timeline-desc { opacity: 0.82; font-size: 0.92rem; margin-top: 4px; line-height: 1.5; }
 
   .detalle-fila { display: flex; gap: 12px; margin-bottom: 14px; align-items: flex-start; }
@@ -505,7 +522,7 @@ function estilos(tema, evento) {
   }
   .dedicatoria-columna { flex: 1; min-width: 130px; }
   .dedicatoria-etiqueta {
-    font-family: var(--fuente-titulo);
+    font-family: var(--fuente-secundaria);
     font-style: italic;
     color: var(--primario);
     font-size: 1.15rem;
@@ -741,6 +758,7 @@ function renderContenidoEvento(evento, tema, invitado, fotoFondo) {
     <div class="icono">${tema.icono}</div>
     <div class="hero-etiqueta">${escapeHtml(tema.etiqueta)}</div>
     <h1>${escapeHtml(evento.titulo || "")}</h1>
+    ${evento.fotoFestejada ? `<div class="foto-festejada"><img src="${escapeHtml(evento.fotoFestejada)}" alt=""></div>` : ""}
     ${evento.subtitulo ? `<p class="hero-subtitulo">${escapeHtml(evento.subtitulo)}</p>` : ""}
     ${divisorOrnamental()}
     ${invitado ? `<div class="saludo-invitado">💌 Invitación especial para ${escapeHtml(invitado.nombre)}</div>` : ""}`;
@@ -926,6 +944,12 @@ function mapaEmbed(etiqueta, direccion) {
   </div>`;
 }
 
+/** Extrae el ID de video de un link de YouTube (watch/shorts/youtu.be), o null si no aplica. */
+function youtubeId(url) {
+  const m = String(url || "").match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
 function seccionGaleria(evento) {
   const items = Array.isArray(evento.galeria) ? evento.galeria.slice(0, 24) : [];
   if (items.length === 0) return "";
@@ -934,6 +958,16 @@ function seccionGaleria(evento) {
     .map((item) => {
       const url = escapeHtml(item.url);
       if (item.tipo === "video") {
+        const yt = youtubeId(item.url);
+        if (yt) {
+          const poster = escapeHtml(item.poster || `https://img.youtube.com/vi/${yt}/hqdefault.jpg`);
+          return `<div class="carrusel-slide">
+            <button type="button" class="galeria-item" data-tipo="youtube" data-id="${escapeHtml(yt)}">
+              <img src="${poster}" alt="" loading="lazy">
+              <span class="play-badge"><span>▶</span></span>
+            </button>
+          </div>`;
+        }
         const poster = escapeHtml(item.poster || item.url);
         return `<div class="carrusel-slide">
           <button type="button" class="galeria-item" data-tipo="video" data-src="${url}">
@@ -1157,10 +1191,19 @@ function scriptLightbox() {
   document.querySelectorAll('.galeria-item').forEach(function(btn) {
     btn.addEventListener('click', function() {
       var tipo = btn.getAttribute('data-tipo');
-      var src = btn.getAttribute('data-src');
-      contenido.innerHTML = tipo === 'video'
-        ? '<video src="' + src + '" controls autoplay playsinline></video>'
-        : '<img src="' + src + '" alt="">';
+      if (tipo === 'youtube') {
+        var id = btn.getAttribute('data-id');
+        contenido.innerHTML = '<div style="width:90vw;max-width:480px;aspect-ratio:16/9;">' +
+          '<iframe width="100%" height="100%" style="border:0;border-radius:10px;" ' +
+          'src="https://www.youtube.com/embed/' + id + '?autoplay=1" ' +
+          'title="Video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" ' +
+          'allowfullscreen></iframe></div>';
+      } else {
+        var src = btn.getAttribute('data-src');
+        contenido.innerHTML = tipo === 'video'
+          ? '<video src="' + src + '" controls autoplay playsinline></video>'
+          : '<img src="' + src + '" alt="">';
+      }
       lightbox.hidden = false;
     });
   });

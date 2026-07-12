@@ -246,6 +246,8 @@ async function manejarCrearEvento(request, env) {
     mesaDeRegalos: body.mesaDeRegalos ?? existente?.mesaDeRegalos ?? "",
     mensaje: body.mensaje ?? existente?.mensaje ?? "",
     fotoPortada: body.fotoPortada ?? existente?.fotoPortada ?? "",
+    // fotoFestejada: retrato circular mostrado entre el nombre y el subtítulo del hero
+    fotoFestejada: body.fotoFestejada ?? existente?.fotoFestejada ?? "",
     // galeria: [{ tipo: "foto"|"video", url, poster? }]
     galeria: body.galeria ?? existente?.galeria ?? [],
     // itinerario: [{ hora, titulo, descripcion?, icono? }]
