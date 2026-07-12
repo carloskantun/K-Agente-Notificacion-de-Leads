@@ -27,6 +27,7 @@
  *   GET    /admin/eventos/:slug/invitados    → lista invitados + estado RSVP (JSON)
  *   GET    /admin/eventos/:slug/invitados.csv→ exporta invitados + estado RSVP (CSV)
  *   POST   /admin/eventos/:slug/media        → sube una foto/video a R2 (body binario)
+ *   POST   /admin/eventos/:slug/media/importar-url → { url, filename? } descarga y guarda en R2
  *   DELETE /admin/eventos/:slug/media/:file  → elimina un archivo de R2
  *
  * RUTA PÚBLICA DE MEDIOS:
@@ -465,6 +466,63 @@ async function manejarSubirMedia(request, env, slug) {
   return jsonResponse({ success: true, tipo, url, archivo: nombreArchivo }, 201);
 }
 
+/**
+ * Descarga un archivo desde una URL externa (ej. un link de exportación de
+ * Canva) y lo guarda en R2, igual que si se hubiera subido directo. Útil
+ * cuando el archivo ya vive en algún lugar público mientras se decide si
+ * vale la pena tenerlo permanente en R2.
+ */
+async function manejarImportarMediaDesdeURL(request, env, slug) {
+  if (!env.INVITACIONES_MEDIA) {
+    return jsonResponse({ error: "Almacenamiento de medios no configurado (falta el binding R2)." }, 500);
+  }
+
+  const evento = await obtenerEvento(env.INVITACIONES_KV, slug);
+  if (!evento) return jsonResponse({ error: "Evento no encontrado." }, 404);
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonResponse({ error: "JSON inválido." }, 400);
+  }
+
+  const urlOrigen = body.url;
+  if (!urlOrigen || !/^https?:\/\//i.test(urlOrigen)) {
+    return jsonResponse({ error: "Falta 'url' (debe ser http/https)." }, 422);
+  }
+
+  let respuesta;
+  try {
+    respuesta = await fetch(urlOrigen);
+  } catch (err) {
+    return jsonResponse({ error: `No se pudo descargar la URL: ${err.message}` }, 502);
+  }
+  if (!respuesta.ok) {
+    return jsonResponse({ error: `La URL respondió ${respuesta.status}.` }, 502);
+  }
+
+  const contentType = (respuesta.headers.get("Content-Type") || "").split(";")[0].trim().toLowerCase();
+  const tipo = TIPOS_MIME_PERMITIDOS[contentType];
+  if (!tipo) {
+    return jsonResponse(
+      { error: `Tipo de archivo no permitido: ${contentType || "desconocido"}. Usa JPEG, PNG, WEBP, GIF, MP4, WEBM o MOV.` },
+      415
+    );
+  }
+
+  const nombreOriginal = sanitizarNombreArchivo(body.filename || `${tipo}-${Date.now()}`);
+  const nombreArchivo = `${crypto.randomUUID().slice(0, 8)}-${nombreOriginal}`;
+  const key = `${slug}/${nombreArchivo}`;
+
+  await env.INVITACIONES_MEDIA.put(key, respuesta.body, {
+    httpMetadata: { contentType },
+  });
+
+  const url = `${new URL(request.url).origin}/media/${slug}/${nombreArchivo}`;
+  return jsonResponse({ success: true, tipo, url, archivo: nombreArchivo }, 201);
+}
+
 async function manejarServirMedia(env, slug, archivo) {
   if (!env.INVITACIONES_MEDIA) return jsonResponse({ error: "No encontrado." }, 404);
 
@@ -588,6 +646,9 @@ export default {
       }
       if ((m = pathname.match(/^\/admin\/eventos\/([a-z0-9-]+)\/media$/)) && method === "POST") {
         return manejarSubirMedia(request, env, m[1]);
+      }
+      if ((m = pathname.match(/^\/admin\/eventos\/([a-z0-9-]+)\/media\/importar-url$/)) && method === "POST") {
+        return manejarImportarMediaDesdeURL(request, env, m[1]);
       }
       if ((m = pathname.match(/^\/admin\/eventos\/([a-z0-9-]+)\/media\/([a-zA-Z0-9.\-_]+)$/)) && method === "DELETE") {
         return manejarEliminarMedia(env, m[1], m[2]);

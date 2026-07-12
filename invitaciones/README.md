@@ -152,6 +152,23 @@ o `video/quicktime`) — el Worker detecta el tipo automáticamente.
 - **Límites de tamaño:** 15MB por foto, 100MB por video.
 - **Borrar un archivo:** `DELETE /admin/eventos/:slug/media/:archivo` (mismo Authorization).
 
+### Importar un archivo desde una URL (ej. un link de exportación de Canva)
+
+Si la imagen ya vive en algún lugar público (Canva, Google Drive con link
+público, etc.), el Worker la puede descargar y guardar en R2 él mismo, sin
+que tengas que bajarla y volver a subirla:
+
+```bash
+curl -X POST https://TU-WORKER.workers.dev/admin/eventos/juan-y-maria/media/importar-url \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "url": "https://ejemplo.com/mi-diseno.png", "filename": "marco.png" }'
+```
+
+Misma respuesta y mismos límites que la subida directa. Nota: esto requiere
+que el Worker (no tu computadora) pueda alcanzar esa URL — en producción
+funciona con cualquier URL pública normal.
+
 ---
 
 ## Modo `lista` — importar invitados por CSV
