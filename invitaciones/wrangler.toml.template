@@ -1,0 +1,53 @@
+# =============================================================================
+# WRANGLER.TOML — INVITACIONES DIGITALES (plantilla)
+# =============================================================================
+#
+# Un solo Worker multi-evento. Copia este archivo a wrangler.toml y reemplaza
+# los placeholders {{VARIABLE}}. wrangler.toml está en .gitignore (regla
+# heredada del proyecto raíz) — nunca lo subas con IDs reales si te preocupa
+# exponer el nombre del namespace, aunque no contiene secrets.
+#
+# Pasos:
+#   1. cd invitaciones
+#   2. npx wrangler kv namespace create INVITACIONES_KV
+#      (y opcionalmente, para desarrollo local:)
+#      npx wrangler kv namespace create INVITACIONES_KV --preview
+#   3. npx wrangler r2 bucket create invitaciones-media
+#      (el nombre del bucket es libre, ajusta bucket_name abajo si lo cambias)
+#   4. Copia los "id" que te devuelve wrangler en los placeholders de abajo.
+#   5. cp wrangler.toml.template wrangler.toml   (y edita los placeholders)
+#   6. wrangler secret put ADMIN_TOKEN
+#      wrangler secret put SESSION_SECRET
+#      wrangler secret put RESEND_API_KEY   # opcional, solo si usarás email automático
+#   7. npx wrangler deploy
+# =============================================================================
+
+name = "invitaciones-digitales"
+main = "src/worker.js"
+compatibility_date = "2024-09-23"
+
+[[kv_namespaces]]
+binding = "INVITACIONES_KV"
+id = "{{KV_NAMESPACE_ID}}"
+preview_id = "{{KV_NAMESPACE_PREVIEW_ID}}"
+
+# Fotos y video subidos desde el panel admin (portada + galería)
+[[r2_buckets]]
+binding = "INVITACIONES_MEDIA"
+bucket_name = "invitaciones-media"
+
+[vars]
+EMAIL_FROM_DOMAIN = "{{EMAIL_FROM_DOMAIN}}"
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+# =============================================================================
+# SECRETS — NUNCA van en este archivo. Cargar con `wrangler secret put`:
+#
+#   wrangler secret put ADMIN_TOKEN       # protege todas las rutas /admin/*
+#   wrangler secret put SESSION_SECRET    # pepper de contraseñas + firma de cookies
+#   wrangler secret put RESEND_API_KEY    # opcional — solo si algún evento usa
+#                                          # emailAutomatico: true
+# =============================================================================
