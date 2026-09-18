@@ -209,6 +209,35 @@ function estilos(tema, evento) {
   .hero-plana h1 { color: var(--primario); }
   .hero-plana .hero-contenido { position: relative; z-index: 3; }
 
+  /* ── Hero "sintético" (synthwave, tema cumpleaños sin fotos) ─────────── */
+  .hero-plana--sintetico {
+    background: linear-gradient(180deg, #170a30 0%, #3c1259 40%, #7a1e6e 72%, #24123f 100%);
+    padding-top: 76px;
+    padding-bottom: 44px;
+  }
+  .hero-sintetico-fondo { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+  .hero-plana--sintetico .hero-contenido .icono { font-size: 2.2rem; filter: drop-shadow(0 0 10px rgba(255,255,255,0.5)); }
+  .hero-plana--sintetico .hero-etiqueta { color: #6bf1ff; text-shadow: 0 0 12px rgba(107,241,255,0.7); }
+  .hero-plana--sintetico h1 {
+    background: linear-gradient(180deg, #fff26b 0%, #ff6fb0 45%, #b23bff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke: 1px rgba(23,10,48,0.55);
+    color: #ff6fb0;
+    text-shadow: 0 4px 22px rgba(0,0,0,0.55);
+    letter-spacing: 0.02em;
+  }
+  .hero-plana--sintetico .hero-subtitulo { color: #f3e9ff; opacity: 0.95; text-shadow: 0 1px 8px rgba(0,0,0,0.4); }
+  .hero-plana--sintetico .foto-festejada { box-shadow: 0 0 0 2px #6bf1ff, 0 10px 30px rgba(0,0,0,0.4); }
+  .hero-plana--sintetico .saludo-invitado { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.25); color: #fff; }
+  .hero-emoji-flotante {
+    position: absolute;
+    font-size: 1.8rem;
+    z-index: 2;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.35));
+  }
+
   /* ── Decoración (esquinas/ilustración subidas por el admin) ─────────── */
   .hero-decoracion {
     position: absolute;
@@ -680,7 +709,7 @@ function decoracionEsquinas(decoracion, tema, tipo) {
     // Sin imágenes subidas: para el tema de cumpleaños se dibuja un adorno
     // vectorial estilo Memphis (confeti geométrico) en vez de dejar el hero
     // vacío — no depende de ningún archivo externo.
-    return tipo === "cumpleanos" && tema ? decoracionMemphis(tema) : "";
+    return tipo === "cumpleanos" && tema ? decoracionSintetico(tema) : "";
   }
 
   const partes = [];
@@ -724,6 +753,68 @@ function decoracionEsquinas(decoracion, tema, tipo) {
  * garabato, rombo) en los colores del tema — para invitaciones sencillas
  * que no suben arte propio. 100% SVG inline, sin archivos externos.
  */
+/**
+ * Escena "synthwave" completa para el hero de cumpleaños sin arte propio:
+ * fondo con sol + horizonte de rejilla en SVG (cubre todo el hero), más
+ * cassette, confeti geométrico y globos/grabadora como acentos flotantes.
+ * Todo vectorial e inline — no depende de ningún archivo externo.
+ */
+function decoracionSintetico(tema) {
+  const p = escapeHtml(tema.colorPrimario);
+  const a = escapeHtml(tema.colorAcento);
+
+  const fondo = `<svg class="hero-sintetico-fondo" viewBox="0 0 400 320" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="sol" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#fff26b"/>
+        <stop offset="45%" stop-color="#ff6fb0"/>
+        <stop offset="100%" stop-color="#b23bff"/>
+      </linearGradient>
+      <linearGradient id="rejilla" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${a}"/>
+        <stop offset="100%" stop-color="${p}"/>
+      </linearGradient>
+    </defs>
+    <circle cx="200" cy="130" r="82" fill="url(#sol)"/>
+    <rect x="118" y="158" width="164" height="7" fill="#170a30"/>
+    <rect x="118" y="172" width="164" height="8" fill="#170a30"/>
+    <rect x="118" y="187" width="164" height="9" fill="#170a30"/>
+    <rect x="118" y="203" width="164" height="11" fill="#170a30"/>
+    <g stroke="url(#rejilla)" stroke-width="1.5" opacity="0.8">
+      <line x1="0" y1="224" x2="400" y2="224"/>
+      <line x1="0" y1="248" x2="400" y2="248"/>
+      <line x1="0" y1="278" x2="400" y2="278"/>
+      <line x1="-60" y1="320" x2="200" y2="224"/>
+      <line x1="460" y1="320" x2="200" y2="224"/>
+      <line x1="10" y1="320" x2="200" y2="224"/>
+      <line x1="390" y1="320" x2="200" y2="224"/>
+      <line x1="80" y1="320" x2="200" y2="224"/>
+      <line x1="320" y1="320" x2="200" y2="224"/>
+      <line x1="150" y1="320" x2="200" y2="224"/>
+      <line x1="250" y1="320" x2="200" y2="224"/>
+    </g>
+  </svg>`;
+
+  const cassette = `<svg class="hero-decoracion" style="left:5%;bottom:78px;top:auto;width:24%;max-width:100px;" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <rect x="6" y="20" width="88" height="60" rx="8" fill="#2b1150" stroke="${a}" stroke-width="2.5"/>
+    <rect x="16" y="30" width="68" height="24" rx="4" fill="#170a30"/>
+    <circle cx="34" cy="42" r="9" fill="none" stroke="${a}" stroke-width="2.5"/>
+    <circle cx="66" cy="42" r="9" fill="none" stroke="${p}" stroke-width="2.5"/>
+    <circle cx="34" cy="42" r="3" fill="${a}"/>
+    <circle cx="66" cy="42" r="3" fill="${p}"/>
+    <rect x="30" y="62" width="40" height="6" rx="3" fill="${a}" opacity="0.8"/>
+    <rect x="16" y="72" width="68" height="4" rx="2" fill="${p}" opacity="0.6"/>
+  </svg>`;
+
+  const confetti = decoracionMemphis(tema);
+  const globos = `<span class="hero-emoji-flotante" style="top:8%;right:10%;">🎈</span>
+    <span class="hero-emoji-flotante" style="top:20%;right:22%;font-size:1.3rem;">🎈</span>
+    <span class="hero-emoji-flotante" style="bottom:6%;right:8%;">📻</span>`;
+
+  return fondo + confetti + cassette + globos;
+}
+
+/** Confeti geométrico estilo Memphis (círculo, triángulo, garabato, rombo), usado como acento. */
 function decoracionMemphis(tema) {
   const p = escapeHtml(tema.colorPrimario);
   const a = escapeHtml(tema.colorAcento);
@@ -751,6 +842,14 @@ function divisorOrnamental() {
   </svg>`;
 }
 
+/** true si el hero debe usar el fondo oscuro "synthwave" (cumpleaños sin fotos propias). */
+function usaHeroSintetico(evento, fotoFondo) {
+  if (evento.tipo !== "cumpleanos" || fotoFondo) return false;
+  const d = evento.decoracion;
+  const tieneImagenes = d && (d.marco || d.esquinaSuperior || d.esquinaSuperiorDer || d.esquinaInferior || d.esquinaInferiorDer || d.ilustracion);
+  return !tieneImagenes;
+}
+
 function renderCompuertaPassword(evento, tema, errorClave, fotoFondo) {
   const titulo = escapeHtml(evento.titulo || "Invitación");
   const decoracion = decoracionEsquinas(evento.decoracion, tema, evento.tipo);
@@ -760,9 +859,10 @@ function renderCompuertaPassword(evento, tema, errorClave, fotoFondo) {
     <h1>${titulo}</h1>
     <p class="hero-subtitulo">Esta invitación es privada. Ingresa la contraseña para verla.</p>`;
 
+  const heroPlanaClase = usaHeroSintetico(evento, fotoFondo) ? "hero-plana hero-plana--sintetico" : "hero-plana";
   const hero = fotoFondo
     ? `<div class="hero-foto" style="background-image:url('${escapeHtml(fotoFondo)}')">${decoracion}<div class="hero-contenido">${heroInterno}</div></div>`
-    : `<div class="hero-plana">${decoracion}<div class="hero-contenido">${heroInterno}</div></div>`;
+    : `<div class="${heroPlanaClase}">${decoracion}<div class="hero-contenido">${heroInterno}</div></div>`;
 
   return `${hero}
 <div class="contenedor">
@@ -814,9 +914,10 @@ function renderContenidoEvento(evento, tema, invitado, fotoFondo) {
     ${divisorOrnamental()}
     ${invitado ? `<div class="saludo-invitado">💌 Invitación especial para ${escapeHtml(invitado.nombre)}</div>` : ""}`;
 
+  const heroPlanaClase = usaHeroSintetico(evento, fotoFondo) ? "hero-plana hero-plana--sintetico" : "hero-plana";
   const hero = fotoFondo
     ? `<div class="hero-foto" style="background-image:url('${escapeHtml(fotoFondo)}')">${decoracion}<div class="hero-contenido">${heroInterno}</div></div>`
-    : `<div class="hero-plana">${decoracion}<div class="hero-contenido">${heroInterno}</div></div>`;
+    : `<div class="${heroPlanaClase}">${decoracion}<div class="hero-contenido">${heroInterno}</div></div>`;
 
   const countdown = seccionCountdown(evento);
 
