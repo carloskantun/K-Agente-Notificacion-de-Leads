@@ -12,6 +12,8 @@
  *                y confirmar asistencia (RSVP) con sus pases.
  *   "password" → Invitación genérica de solo lectura, protegida con una
  *                contraseña compartida. Sin lista de invitados ni RSVP.
+ *   "publico"  → Invitación genérica de solo lectura, sin contraseña ni
+ *                RSVP. Un solo link para compartir libremente (WhatsApp, etc).
  *
  * RUTAS PÚBLICAS:
  *   GET  /health
@@ -110,6 +112,10 @@ async function manejarVerInvitacion(request, env, slug) {
       return htmlResponse(renderPagina({ evento: eventoPublico, invitado: null, codigoInvalido: true }));
     }
     return htmlResponse(renderPagina({ evento: eventoPublico, invitado, codigoInvalido: false }));
+  }
+
+  if (evento.modo === "publico") {
+    return htmlResponse(renderPagina({ evento: eventoPublico, invitado: null, desbloqueado: true }));
   }
 
   // modo === "password"
@@ -215,8 +221,8 @@ async function manejarCrearEvento(request, env) {
 
   if (!existente) {
     if (!body.titulo) return jsonResponse({ error: "Falta 'titulo'." }, 422);
-    if (modo !== "lista" && modo !== "password") {
-      return jsonResponse({ error: "'modo' debe ser 'lista' o 'password'." }, 422);
+    if (modo !== "lista" && modo !== "password" && modo !== "publico") {
+      return jsonResponse({ error: "'modo' debe ser 'lista', 'password' o 'publico'." }, 422);
     }
     if (modo === "password" && !body.clave) {
       return jsonResponse({ error: "Falta 'clave' para el modo password." }, 422);

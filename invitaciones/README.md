@@ -5,12 +5,13 @@ multi-evento (a diferencia del agente de notificación de leads, que despliega u
 Worker por cliente) — cada evento vive como un registro en Cloudflare KV bajo su
 propio `slug`.
 
-## Dos modos de invitación
+## Tres modos de invitación
 
 | Modo | Cómo funciona |
 |---|---|
 | **`lista`** | Subes un CSV (`nombre,pases,correo`). Cada invitado recibe un código único (`?c=CODIGO`) para ver su invitación personalizada y confirmar asistencia (RSVP) indicando cuántos de sus pases usará. |
 | **`password`** | Invitación genérica de solo lectura. Un único link + una contraseña compartida. Sin lista de invitados ni RSVP — solo controla quién puede *ver* el contenido. |
+| **`publico`** | Invitación genérica de solo lectura, sin contraseña ni RSVP. Un único link para compartir libremente (WhatsApp, redes, etc.) — cualquiera con el link ve la tarjeta. |
 
 ## Cuatro temas visuales
 
