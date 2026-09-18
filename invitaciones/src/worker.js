@@ -67,7 +67,7 @@ import {
 import { renderPagina } from "./plantillas.js";
 
 const SLUG_REGEX = /^[a-z0-9-]{2,64}$/;
-const TIPOS_VALIDOS = ["boda", "xv", "aniversario"];
+const TIPOS_VALIDOS = ["boda", "xv", "aniversario", "cumpleanos"];
 
 // ---------------------------------------------------------------------------
 // AUTENTICACIÓN ADMIN

@@ -12,12 +12,14 @@ propio `slug`.
 | **`lista`** | Subes un CSV (`nombre,pases,correo`). Cada invitado recibe un código único (`?c=CODIGO`) para ver su invitación personalizada y confirmar asistencia (RSVP) indicando cuántos de sus pases usará. |
 | **`password`** | Invitación genérica de solo lectura. Un único link + una contraseña compartida. Sin lista de invitados ni RSVP — solo controla quién puede *ver* el contenido. |
 
-## Tres temas visuales
+## Cuatro temas visuales
 
-`tipo`: `"boda"` · `"xv"` · `"aniversario"` — cada uno con su propia paleta de colores,
-tipografía y textos por defecto (ver `src/plantillas.js`). La paleta de colores de
-cualquier tema se puede sobrescribir por evento con el campo `colores` (ver tabla
-de campos abajo) para que combine con el arte real del cliente.
+`tipo`: `"boda"` · `"xv"` · `"aniversario"` · `"cumpleanos"` — cada uno con su propia
+paleta de colores, tipografía y textos por defecto (ver `src/plantillas.js`). La
+paleta de colores de cualquier tema se puede sobrescribir por evento con el campo
+`colores` (ver tabla de campos abajo) para que combine con el arte real del cliente.
+Las fuentes de Google Fonts que usan los temas (Great Vibes, Playfair Display,
+Cormorant Garamond, Poppins, Righteous) se cargan automáticamente en cada página.
 
 ## Interactividad
 

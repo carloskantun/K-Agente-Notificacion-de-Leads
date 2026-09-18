@@ -64,6 +64,22 @@ const TEMAS = {
     etiquetaPrincipal: "Celebración",
     etiquetaSecundaria: "Recepción",
   },
+  cumpleanos: {
+    etiqueta: "¡Fiesta de Cumpleaños!",
+    icono: "🕺",
+    separador: "✦",
+    fuenteTitulo: "'Righteous', 'Arial Black', sans-serif",
+    fuenteSecundaria: "'Poppins', Verdana, sans-serif",
+    fuenteTexto: "'Poppins', Verdana, sans-serif",
+    colorPrimario: "#d6006f",
+    colorSecundario: "#fff0f7",
+    colorAcento: "#00b8d9",
+    colorTexto: "#2b1150",
+    gradiente: "linear-gradient(160deg, #fef6ff 0%, #fce4f5 45%, #d9e8fb 100%)",
+    tarjetaFondo: "rgba(255,255,255,0.82)",
+    etiquetaPrincipal: "Fiesta",
+    etiquetaSecundaria: "Fiesta",
+  },
 };
 
 /**
@@ -123,6 +139,9 @@ export function renderPagina({ evento, invitado, codigoInvalido, desbloqueado, e
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${titulo}</title>
 <meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:wght@400;600;700&family=Poppins:wght@400;500;600;700&family=Righteous&display=swap" rel="stylesheet">
 ${estilos(tema, evento)}
 </head>
 <body>
