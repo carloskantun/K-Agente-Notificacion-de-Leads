@@ -666,8 +666,23 @@ function estilos(tema, evento) {
  * Sube UN solo archivo de esquina y se refleja automáticamente al otro lado,
  * a menos que definas el lado derecho de forma explícita.
  */
-function decoracionEsquinas(decoracion) {
-  if (!decoracion) return "";
+function decoracionEsquinas(decoracion, tema, tipo) {
+  const tieneImagenes =
+    decoracion &&
+    (decoracion.marco ||
+      decoracion.esquinaSuperior ||
+      decoracion.esquinaSuperiorDer ||
+      decoracion.esquinaInferior ||
+      decoracion.esquinaInferiorDer ||
+      decoracion.ilustracion);
+
+  if (!tieneImagenes) {
+    // Sin imágenes subidas: para el tema de cumpleaños se dibuja un adorno
+    // vectorial estilo Memphis (confeti geométrico) en vez de dejar el hero
+    // vacío — no depende de ningún archivo externo.
+    return tipo === "cumpleanos" && tema ? decoracionMemphis(tema) : "";
+  }
+
   const partes = [];
 
   // marco: una sola imagen que cubre todo el hero (ej. un diseño de fondo
@@ -704,6 +719,29 @@ function decoracionEsquinas(decoracion) {
   return partes.join("");
 }
 
+/**
+ * Adorno vectorial estilo Memphis (confeti geométrico: círculo, triángulo,
+ * garabato, rombo) en los colores del tema — para invitaciones sencillas
+ * que no suben arte propio. 100% SVG inline, sin archivos externos.
+ */
+function decoracionMemphis(tema) {
+  const p = escapeHtml(tema.colorPrimario);
+  const a = escapeHtml(tema.colorAcento);
+  const izq = `<svg class="hero-decoracion superior-izq" width="130" height="130" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="30" cy="30" r="16" fill="${a}" opacity="0.85"/>
+    <polygon points="90,10 112,52 68,52" fill="${p}" opacity="0.85"/>
+    <path d="M10 92 Q25 76 40 92 T70 92" stroke="${a}" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <rect x="95" y="86" width="24" height="24" rx="4" fill="${p}" opacity="0.7" transform="rotate(20 107 98)"/>
+  </svg>`;
+  const der = `<svg class="hero-decoracion superior-der" width="130" height="130" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="112" cy="34" r="14" fill="${p}" opacity="0.85"/>
+    <polygon points="30,14 52,56 8,56" fill="${a}" opacity="0.85"/>
+    <path d="M68 96 Q83 80 98 96 T128 96" stroke="${p}" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <rect x="14" y="90" width="22" height="22" rx="4" fill="${a}" opacity="0.7" transform="rotate(-15 25 101)"/>
+  </svg>`;
+  return izq + der;
+}
+
 /** Pequeño divisor ornamental dibujado en SVG (línea + rombo), sin depender de artes externas. */
 function divisorOrnamental() {
   return `<svg class="divisor-ornamental" width="150" height="18" viewBox="0 0 150 18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -715,7 +753,7 @@ function divisorOrnamental() {
 
 function renderCompuertaPassword(evento, tema, errorClave, fotoFondo) {
   const titulo = escapeHtml(evento.titulo || "Invitación");
-  const decoracion = decoracionEsquinas(evento.decoracion);
+  const decoracion = decoracionEsquinas(evento.decoracion, tema, evento.tipo);
   const heroInterno = `
     <div class="icono">${tema.icono}</div>
     <div class="hero-etiqueta">${escapeHtml(tema.etiqueta)}</div>
@@ -766,7 +804,7 @@ function renderInvitacionNoEncontrada(evento, tema) {
 }
 
 function renderContenidoEvento(evento, tema, invitado, fotoFondo) {
-  const decoracion = decoracionEsquinas(evento.decoracion);
+  const decoracion = decoracionEsquinas(evento.decoracion, tema, evento.tipo);
   const heroInterno = `
     <div class="icono">${tema.icono}</div>
     <div class="hero-etiqueta">${escapeHtml(tema.etiqueta)}</div>
