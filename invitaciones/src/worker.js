@@ -105,6 +105,9 @@ async function manejarVerInvitacion(request, env, slug) {
   if (evento.modo === "lista") {
     const codigo = (url.searchParams.get("c") || "").trim().toUpperCase();
     if (!codigo) {
+      if (evento.permitirGeneral === true) {
+        return htmlResponse(renderPagina({ evento: eventoPublico, invitado: null, codigoInvalido: false }));
+      }
       return htmlResponse(renderPagina({ evento: eventoPublico, invitado: null, codigoInvalido: true }));
     }
     const invitado = await obtenerInvitado(env.INVITACIONES_KV, slug, codigo);
@@ -242,6 +245,11 @@ async function manejarCrearEvento(request, env) {
     subtitulo: body.subtitulo ?? existente?.subtitulo ?? "",
     fechaEvento: body.fechaEvento ?? existente?.fechaEvento ?? null,
     mostrarCountdown: body.mostrarCountdown ?? existente?.mostrarCountdown ?? true,
+    // permitirGeneral: en modo "lista", muestra el evento sin código (?c=) en vez del
+    // error "invitación no encontrada" — útil si además compartes un link general.
+    permitirGeneral: body.permitirGeneral ?? existente?.permitirGeneral ?? false,
+    mostrarRSVP: body.mostrarRSVP ?? existente?.mostrarRSVP ?? true,
+    mostrarQR: body.mostrarQR ?? existente?.mostrarQR ?? true,
     lugarCeremonia: body.lugarCeremonia ?? existente?.lugarCeremonia ?? "",
     direccionCeremonia: body.direccionCeremonia ?? existente?.direccionCeremonia ?? "",
     horaCeremonia: body.horaCeremonia ?? existente?.horaCeremonia ?? "",
@@ -252,6 +260,9 @@ async function manejarCrearEvento(request, env) {
     mesaDeRegalos: body.mesaDeRegalos ?? existente?.mesaDeRegalos ?? "",
     mensaje: body.mensaje ?? existente?.mensaje ?? "",
     fotoPortada: body.fotoPortada ?? existente?.fotoPortada ?? "",
+    // fotoSocial: imagen usada en las meta tags Open Graph/Twitter Card al compartir
+    // el link (WhatsApp, Facebook, etc.); si no se define usa fotoPortada/fotoFestejada.
+    fotoSocial: body.fotoSocial ?? existente?.fotoSocial ?? "",
     // fotoFestejada: retrato circular mostrado entre el nombre y el subtítulo del hero
     fotoFestejada: body.fotoFestejada ?? existente?.fotoFestejada ?? "",
     // galeria: [{ tipo: "foto"|"video", url, poster? }]

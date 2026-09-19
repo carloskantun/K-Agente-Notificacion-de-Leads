@@ -118,7 +118,8 @@ export function temaDe(tipo, evento) {
  */
 export function renderPagina({ evento, invitado, codigoInvalido, desbloqueado, errorClave }) {
   const tema = temaDe(evento.tipo, evento);
-  const titulo = escapeHtml(evento.titulo || "Invitación");
+  const tituloTexto = evento.titulo || "Invitación";
+  const titulo = escapeHtml(tituloTexto);
   const fotoFondo = evento.fotoPortada || null;
 
   const mostrarContenido = evento.modo === "lista" ? true : !!desbloqueado;
@@ -139,6 +140,7 @@ export function renderPagina({ evento, invitado, codigoInvalido, desbloqueado, e
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${titulo}</title>
 <meta name="robots" content="noindex, nofollow">
+${metasSociales(evento, tituloTexto)}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:wght@400;600;700&family=Poppins:wght@400;500;600;700&family=Righteous&display=swap" rel="stylesheet">
@@ -151,6 +153,36 @@ ${mostrarContenido && Array.isArray(evento.galeria) && evento.galeria.length > 0
 ${mostrarContenido ? scriptLightbox() : ""}
 </body>
 </html>`;
+}
+
+/**
+ * Meta tags Open Graph / Twitter Card para que el link se vea bien al
+ * compartirse (WhatsApp, Facebook, etc.): título, descripción e imagen.
+ */
+function metasSociales(evento, tituloTexto) {
+  const descripcion = evento.descripcionSocial || evento.mensaje || evento.subtitulo || "Te invitamos a celebrar este momento especial.";
+  const imagen = evento.fotoSocial || evento.fotoPortada || evento.fotoFestejada || primeraImagenGaleria(evento);
+  const url = evento.slug ? `https://invitaciones-digitales.carloskantun.workers.dev/evento/${encodeURIComponent(evento.slug)}` : "";
+  const imagenMeta = esUrl(imagen)
+    ? `<meta property="og:image" content="${escapeHtml(imagen)}">
+<meta property="og:image:secure_url" content="${escapeHtml(imagen)}">
+<meta name="twitter:image" content="${escapeHtml(imagen)}">`
+    : "";
+
+  return `<meta name="description" content="${escapeHtml(descripcion)}">
+<meta property="og:type" content="website">
+<meta property="og:title" content="${escapeHtml(tituloTexto)}">
+<meta property="og:description" content="${escapeHtml(descripcion)}">
+${url ? `<meta property="og:url" content="${escapeHtml(url)}">` : ""}
+${imagenMeta}
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${escapeHtml(tituloTexto)}">
+<meta name="twitter:description" content="${escapeHtml(descripcion)}">`;
+}
+
+function primeraImagenGaleria(evento) {
+  const item = Array.isArray(evento.galeria) ? evento.galeria.find((g) => g?.tipo === "foto" && g.url) : null;
+  return item?.url || "";
 }
 
 // ---------------------------------------------------------------------------
@@ -409,6 +441,13 @@ function estilos(tema, evento) {
   }
   .timeline-titulo { font-family: var(--fuente-secundaria); font-size: 1.15rem; color: var(--primario); margin-top: 2px; }
   .timeline-desc { opacity: 0.82; font-size: 0.92rem; margin-top: 4px; line-height: 1.5; }
+  .programa-fecha {
+    text-align: center;
+    margin: -6px 0 22px;
+    color: var(--primario);
+    font-family: var(--fuente-secundaria);
+    font-size: 1.08rem;
+  }
 
   .detalle-fila { display: flex; gap: 12px; margin-bottom: 14px; align-items: flex-start; }
   .detalle-fila:last-child { margin-bottom: 0; }
@@ -931,8 +970,8 @@ ${countdown}
   ${seccionMapa(evento, tema)}
   ${seccionGaleria(evento)}
   ${seccionMensaje(evento)}
-  ${evento.modo === "lista" ? seccionRSVP(evento, invitado) : ""}
-  ${seccionQR()}
+  ${evento.modo === "lista" && evento.mostrarRSVP !== false ? seccionRSVP(evento, invitado) : ""}
+  ${evento.mostrarQR !== false ? seccionQR() : ""}
   ${seccionMusica(evento)}
   <div class="footer">Hecho con ${tema.icono} para ${escapeHtml(evento.titulo || "este evento")}</div>
 </div>`;
@@ -999,6 +1038,7 @@ function itinerarioEfectivo(evento, tema) {
 function seccionItinerario(evento, tema) {
   const items = itinerarioEfectivo(evento, tema);
   if (items.length === 0) return "";
+  const fecha = formatearFechaEvento(evento.fechaEvento);
 
   const filas = items
     .map(
@@ -1014,10 +1054,24 @@ function seccionItinerario(evento, tema) {
     .join("");
 
   return `<div class="tarjeta">
-    <div class="eyebrow">${tema.separador} Programa ${tema.separador}</div>
-    <h2>Itinerario</h2>
+    <h2>Programa</h2>
+    ${fecha ? `<div class="programa-fecha">${escapeHtml(fecha)}</div>` : ""}
     <div class="timeline">${filas}</div>
   </div>`;
+}
+
+/** Fecha del evento en español legible ("Sábado 10 de octubre de 2026"). */
+function formatearFechaEvento(fechaISO) {
+  if (!fechaISO) return "";
+  const fecha = new Date(fechaISO);
+  if (Number.isNaN(fecha.getTime())) return "";
+  const texto = new Intl.DateTimeFormat("es-MX", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(fecha);
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
 function seccionDetalles(evento, tema) {

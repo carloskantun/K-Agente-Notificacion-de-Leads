@@ -18,6 +18,7 @@ export function jsonResponse(body, status = 200, extraHeaders = {}) {
     status,
     headers: {
       "Content-Type": "application/json",
+      "Cache-Control": "no-store",
       ...SECURITY_HEADERS,
       ...extraHeaders,
     },
@@ -29,6 +30,7 @@ export function htmlResponse(html, status = 200, extraHeaders = {}) {
     status,
     headers: {
       "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store",
       ...SECURITY_HEADERS,
       ...extraHeaders,
     },

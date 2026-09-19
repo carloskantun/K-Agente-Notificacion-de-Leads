@@ -109,13 +109,18 @@ Volver a llamar `POST /admin/eventos` con el mismo `slug` actualiza el evento
 | Campo | Requerido | Descripción |
 |---|---|---|
 | `slug` | sí | minúsculas, números, guiones. Es la URL del evento. |
-| `tipo` | no (default `boda`) | `boda` \| `xv` \| `aniversario` — tema visual |
-| `modo` | sí (al crear) | `lista` \| `password` |
+| `tipo` | no (default `boda`) | `boda` \| `xv` \| `aniversario` \| `cumpleanos` — tema visual |
+| `modo` | sí (al crear) | `lista` \| `password` \| `publico` |
 | `titulo` | sí (al crear) | Título principal de la invitación |
 | `clave` | solo si `modo=password` | Contraseña en texto plano — se hashea (PBKDF2) y nunca se devuelve |
+| `permitirGeneral` | no (default `false`), solo `modo=lista` | Si `true`, visitar el link sin `?c=CODIGO` muestra el evento genérico (sin RSVP) en vez de "invitación no encontrada" |
+| `mostrarRSVP` | no (default `true`) | Oculta la sección de confirmación de asistencia si es `false` (solo aplica en `modo=lista`) |
+| `mostrarQR` | no (default `true`) | Oculta la sección del código QR si es `false` |
 | `fechaEvento` | no | ISO 8601 con zona horaria. Activa el countdown. |
 | `mostrarCountdown` | no (default `true`) | |
 | `fotoPortada` | no | URL de imagen de fondo del hero (ideal: subida vía `/admin/eventos/:slug/media`, ver abajo) |
+| `fotoSocial` | no | Imagen usada en las meta tags Open Graph/Twitter Card al compartir el link (WhatsApp, Facebook, etc.). Si no se define, usa `fotoPortada`, luego `fotoFestejada`, luego la primera foto de la galería. |
+| `descripcionSocial` | no | Descripción usada en esas mismas meta tags. Si no se define, usa `mensaje` o `subtitulo`. |
 | `fotoFestejada` | no | URL de foto circular (retrato) mostrada entre el nombre y el subtítulo del hero |
 | `galeria` | no | Array `[{ tipo: "foto"\|"video", url, poster? }]` — se muestra en un carrusel (swipe/flechas) con lightbox. `poster` es la miniatura del video (si no se da: para YouTube se usa la miniatura oficial automática, para video normal se usa `url`). Un `video` cuyo `url` sea un link de YouTube (`youtube.com/watch?v=...`, `youtu.be/...`) se embebe automáticamente como iframe de YouTube en el lightbox. |
 | `itinerario` | no | Array `[{ hora, titulo, descripcion?, icono? }]` — se muestra como línea de tiempo. Si se omite, se arma automáticamente con `lugarCeremonia`/`lugarRecepcion` (compatibilidad con eventos creados antes de este campo). |
