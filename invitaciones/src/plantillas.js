@@ -919,7 +919,7 @@ function renderCompuertaPassword(evento, tema, errorClave, fotoFondo) {
 document.getElementById('form-clave').addEventListener('submit', async function(e) {
   e.preventDefault();
   const clave = document.getElementById('clave').value;
-  const res = await fetch(window.location.pathname + '/clave', {
+  const res = await fetch('/evento/${escapeHtml(evento.slug)}/clave', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ clave })
@@ -1306,7 +1306,7 @@ function seccionRSVP(evento, invitado) {
       e.preventDefault();
       var asistencia = form.querySelector('input[name="asistencia"]:checked').value;
       var pases = document.getElementById('pases').value;
-      var res = await fetch(window.location.pathname + '/rsvp' + window.location.search, {
+      var res = await fetch('/evento/${escapeHtml(evento.slug)}/rsvp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ codigo: '${escapeHtml(invitado.codigo)}', asistencia: asistencia, pases: pases })

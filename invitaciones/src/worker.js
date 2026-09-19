@@ -18,6 +18,8 @@
  * RUTAS PÚBLICAS:
  *   GET  /health
  *   GET  /evento/:slug                  → página de la invitación
+ *   GET  /:slug                         → alias corto de lo anterior (para dominios
+ *                                          personalizados, ej. latarjeta.app/rosa-aurora-60)
  *   POST /evento/:slug/clave            → { clave } valida contraseña (modo password)
  *   POST /evento/:slug/rsvp             → { codigo, asistencia, pases } (modo lista)
  *
@@ -676,6 +678,13 @@ export default {
       if ((m = pathname.match(/^\/admin\/eventos\/([a-z0-9-]+)\/media\/([a-zA-Z0-9.\-_]+)$/)) && method === "DELETE") {
         return manejarEliminarMedia(env, m[1], m[2]);
       }
+    }
+
+    // ── Alias de link corto: GET /:slug === GET /evento/:slug ────────────────
+    // Se revisa al final, después de toda ruta específica (/health, /admin/*,
+    // /evento/*, /media/*), para no interceptar ninguna de ellas.
+    if (method === "GET" && (m = pathname.match(/^\/([a-z0-9-]{2,64})$/))) {
+      return manejarVerInvitacion(request, env, m[1]);
     }
 
     return jsonResponse({ error: "Ruta no encontrada." }, 404);
