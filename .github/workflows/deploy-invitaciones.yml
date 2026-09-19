@@ -1,0 +1,58 @@
+name: Deploy Invitaciones Worker
+
+# Despliega el Worker de invitaciones-digitales a Cloudflare automáticamente,
+# sin depender de ninguna computadora local. Requiere el secret de repo
+# CLOUDFLARE_API_TOKEN (Settings → Secrets and variables → Actions).
+
+on:
+  push:
+    branches:
+      - claude/digital-event-invitations-ouotuk
+    paths:
+      - "invitaciones/**"
+      - ".github/workflows/deploy-invitaciones.yml"
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: invitaciones
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Escribir wrangler.toml
+        run: |
+          cat > wrangler.toml << 'EOF'
+          name = "invitaciones-digitales"
+          main = "src/worker.js"
+          compatibility_date = "2024-09-23"
+
+          [[kv_namespaces]]
+          binding = "INVITACIONES_KV"
+          id = "5b2492918e0b404d9cf3ab09230eb30a"
+
+          [[r2_buckets]]
+          binding = "INVITACIONES_MEDIA"
+          bucket_name = "invitaciones-media"
+
+          [vars]
+          EMAIL_FROM_DOMAIN = "notificaciones.com"
+
+          [observability]
+          enabled = true
+          head_sampling_rate = 1
+          EOF
+
+      - name: Desplegar a Cloudflare Workers
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
