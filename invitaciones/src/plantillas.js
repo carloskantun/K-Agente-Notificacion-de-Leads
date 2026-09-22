@@ -75,8 +75,9 @@ const TEMAS = {
     colorSecundario: "#fff0f7",
     colorAcento: "#00b8d9",
     colorTexto: "#2b1150",
-    gradiente: "linear-gradient(160deg, #fef6ff 0%, #fce4f5 45%, #d9e8fb 100%)",
-    tarjetaFondo: "rgba(255,255,255,0.82)",
+    gradiente: "linear-gradient(180deg, #0a0812 0%, #150a1f 55%, #1c0d29 100%)",
+    tarjetaFondo: "rgba(255,255,255,0.93)",
+    paginaOscura: true,
     etiquetaPrincipal: "Fiesta",
     etiquetaSecundaria: "Fiesta",
   },
@@ -147,6 +148,7 @@ ${metasSociales(evento, tituloTexto)}
 ${estilos(tema, evento)}
 </head>
 <body>
+${evento.tipo === "cumpleanos" ? decoracionFondoPagina() : ""}
 ${cuerpo}
 ${mostrarContenido && evento.mostrarCountdown !== false && evento.fechaEvento ? scriptCountdown(evento.fechaEvento) : ""}
 ${mostrarContenido && Array.isArray(evento.galeria) && evento.galeria.length > 0 ? scriptCarrusel() : ""}
@@ -201,6 +203,7 @@ function estilos(tema, evento) {
     --secundario: ${tema.colorSecundario};
     --acento: ${tema.colorAcento};
     --texto: ${tema.colorTexto};
+    --texto-pagina: ${tema.paginaOscura ? "#f3ecff" : tema.colorTexto};
     --tarjeta: ${tema.tarjetaFondo};
     --fuente-titulo: ${tema.fuenteTitulo};
     --fuente-secundaria: ${tema.fuenteSecundaria || tema.fuenteTitulo};
@@ -240,6 +243,7 @@ function estilos(tema, evento) {
   .hero-plana { position: relative; text-align: center; padding: 64px 16px 32px; overflow: hidden; }
   .hero-plana h1 { color: var(--primario); }
   .hero-plana .hero-contenido { position: relative; z-index: 3; }
+  .hero-plana:not(.hero-plana--sintetico) .hero-subtitulo { color: var(--texto-pagina); }
 
   /* ── Hero "sintético" (synthwave, tema cumpleaños sin fotos) ─────────── */
   .hero-plana--sintetico {
@@ -701,7 +705,7 @@ function estilos(tema, evento) {
   .estado.si { background: #e3f6e3; color: #226622; }
   .estado.no { background: #f8e3e3; color: #7a2222; }
   .error { color: #a02020; font-size: 0.9rem; text-align: center; }
-  .footer { text-align: center; opacity: 0.6; font-size: 0.8rem; margin-top: 32px; }
+  .footer { text-align: center; opacity: 0.6; font-size: 0.8rem; margin-top: 32px; color: var(--texto-pagina); }
   .no-encontrada { text-align: center; padding: 80px 16px; }
 
   .boton-musica {
@@ -883,6 +887,40 @@ function decoracionMemphis(tema) {
     <rect x="14" y="90" width="22" height="22" rx="4" fill="${a}" opacity="0.7" transform="rotate(-15 25 101)"/>
   </svg>`;
   return izq + der;
+}
+
+/**
+ * Fondo decorativo de página completa estilo "póster de fiesta 80's":
+ * anillos de neón concéntricos en las esquinas + salpicaduras de pintura
+ * dispersas, fijos detrás del contenido (position:fixed, z-index:-1) para
+ * que se vean en todo el scroll, no solo en el hero. 100% SVG inline.
+ */
+function decoracionFondoPagina() {
+  const colores = ["#ffde59", "#ff2e88", "#00e5ff", "#7ed957"];
+  const anillos = (cx, cy) =>
+    colores
+      .map((c, i) => `<circle cx="${cx}" cy="${cy}" r="${34 + i * 22}" fill="none" stroke="${c}" stroke-width="3" opacity="${0.5 - i * 0.08}"/>`)
+      .join("");
+
+  const manchas = [
+    { x: "8%", y: "14%", r: 5, c: "#ffde59" },
+    { x: "88%", y: "22%", r: 7, c: "#ff2e88" },
+    { x: "14%", y: "68%", r: 6, c: "#00e5ff" },
+    { x: "82%", y: "78%", r: 5, c: "#7ed957" },
+    { x: "50%", y: "40%", r: 4, c: "#ff2e88" },
+    { x: "30%", y: "88%", r: 6, c: "#ffde59" },
+  ]
+    .map(
+      (m) =>
+        `<span style="position:absolute;left:${m.x};top:${m.y};width:${m.r * 2}px;height:${m.r * 2}px;border-radius:50%;background:${m.c};opacity:0.55;box-shadow:0 0 12px ${m.c};"></span>`
+    )
+    .join("");
+
+  return `<div style="position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;" aria-hidden="true">
+    <svg style="position:absolute;top:-60px;left:-60px;" width="220" height="220" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">${anillos(110, 110)}</svg>
+    <svg style="position:absolute;bottom:-70px;right:-70px;" width="240" height="240" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">${anillos(120, 120)}</svg>
+    ${manchas}
+  </div>`;
 }
 
 /** Pequeño divisor ornamental dibujado en SVG (línea + rombo), sin depender de artes externas. */
