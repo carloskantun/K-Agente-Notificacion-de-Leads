@@ -380,6 +380,8 @@ function estilos(tema, evento) {
 
   /* ── Tarjetas ─────────────────────────────────────────────────────────── */
   .tarjeta {
+    position: relative;
+    overflow: hidden;
     background: var(--tarjeta);
     border: 1px solid rgba(0,0,0,0.06);
     border-radius: 20px;
@@ -387,6 +389,35 @@ function estilos(tema, evento) {
     margin-bottom: 22px;
     backdrop-filter: blur(6px);
     box-shadow: 0 16px 40px rgba(0,0,0,0.07);
+  }
+  ${
+    tema.paginaOscura
+      ? `.tarjeta::before {
+    content: "";
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--acento);
+    opacity: 0.16;
+    pointer-events: none;
+  }
+  .tarjeta::after {
+    content: "";
+    position: absolute;
+    bottom: -6px;
+    left: -6px;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0 0 28px 28px;
+    border-color: transparent transparent var(--primario) transparent;
+    opacity: 0.14;
+    pointer-events: none;
+  }`
+      : ""
   }
   .eyebrow {
     text-align: center;
@@ -739,6 +770,36 @@ function estilos(tema, evento) {
     100% { transform: scale(1.5); opacity: 0; }
   }
   .boton-musica.musica-activa::after { animation: none; opacity: 0; }
+  .etiqueta-musica {
+    position: fixed;
+    bottom: calc(38px + env(safe-area-inset-bottom, 0px));
+    right: 84px;
+    background: rgba(20,10,30,0.85);
+    color: #fff;
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    z-index: 999;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+    animation: aparecer-etiqueta-musica 0.4s ease-out 0.8s both;
+    pointer-events: none;
+  }
+  .etiqueta-musica::after {
+    content: "";
+    position: absolute;
+    right: -5px;
+    bottom: 14px;
+    width: 10px;
+    height: 10px;
+    background: rgba(20,10,30,0.85);
+    transform: rotate(45deg);
+  }
+  @keyframes aparecer-etiqueta-musica {
+    from { opacity: 0; transform: translateX(8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
 </style>`;
 }
 
@@ -1291,17 +1352,20 @@ function seccionMensaje(evento) {
 
 function seccionMusica(evento) {
   if (!evento.musicaUrl) return "";
+  const etiqueta = `<span class="etiqueta-musica" id="etiqueta-musica">¡Dale play a la música! 🎶</span>`;
 
   const yt = youtubeId(evento.musicaUrl);
   if (yt) {
     const src = `https://www.youtube.com/embed/${escapeHtml(yt)}?enablejsapi=1&playsinline=1&controls=0&loop=1&playlist=${escapeHtml(yt)}`;
     return `<iframe id="yt-musica" src="${src}" allow="autoplay; encrypted-media" frameborder="0"
     style="position:fixed;bottom:0;right:0;width:2px;height:2px;opacity:0;pointer-events:none;" aria-hidden="true"></iframe>
+  ${etiqueta}
   <button type="button" id="btn-musica" class="boton-musica">🎵</button>
   <script>
   (function() {
     var iframe = document.getElementById('yt-musica');
     var btn = document.getElementById('btn-musica');
+    var etiquetaBtn = document.getElementById('etiqueta-musica');
     var sonando = false;
     function comando(func) {
       iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: func, args: [] }), '*');
@@ -1311,23 +1375,27 @@ function seccionMusica(evento) {
       else { comando('playVideo'); btn.textContent = '⏸'; }
       sonando = !sonando;
       btn.classList.toggle('musica-activa', sonando);
+      if (etiquetaBtn) etiquetaBtn.remove();
     });
   })();
   </script>`;
   }
 
   return `<audio id="musica-evento" src="${escapeHtml(evento.musicaUrl)}" loop></audio>
+  ${etiqueta}
   <button type="button" id="btn-musica" class="boton-musica">🎵</button>
   <script>
   (function() {
     var audio = document.getElementById('musica-evento');
     var btn = document.getElementById('btn-musica');
+    var etiquetaBtn = document.getElementById('etiqueta-musica');
     var sonando = false;
     btn.addEventListener('click', function() {
       if (sonando) { audio.pause(); btn.textContent = '🎵'; }
       else { audio.play().catch(function(){}); btn.textContent = '⏸'; }
       sonando = !sonando;
       btn.classList.toggle('musica-activa', sonando);
+      if (etiquetaBtn) etiquetaBtn.remove();
     });
   })();
   </script>`;
