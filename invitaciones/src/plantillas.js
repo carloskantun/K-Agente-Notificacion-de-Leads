@@ -623,6 +623,16 @@ function estilos(tema, evento) {
   }
 
   .mensaje { text-align: center; font-style: italic; line-height: 1.6; }
+  .regalo-tarjeta { text-align: center; }
+  .regalo-icono { font-size: 2rem; margin-bottom: 8px; }
+  .regalo-frase {
+    font-family: var(--fuente-secundaria);
+    font-style: italic;
+    font-size: 1.25rem;
+    color: var(--primario);
+    margin: 0 0 10px;
+  }
+  .regalo-detalle { font-size: 0.92rem; opacity: 0.85; margin: 0; line-height: 1.5; }
 
   /* ── Dedicatoria (padres/padrinos) ───────────────────────────────────── */
   .dedicatoria-grid {
@@ -1079,6 +1089,7 @@ ${countdown}
   ${seccionDedicatoria(evento)}
   ${seccionItinerario(evento, tema)}
   ${seccionDetalles(evento, tema)}
+  ${seccionRegalo(evento)}
   ${seccionMapa(evento, tema)}
   ${seccionGaleria(evento)}
   ${seccionMensaje(evento)}
@@ -1192,13 +1203,24 @@ function seccionDetalles(evento, tema) {
   if (evento.codigoVestimenta) {
     filas.push(filaDetalle("👗", "Código de vestimenta", [evento.codigoVestimenta]));
   }
-  if (evento.mesaDeRegalos) {
-    filas.push(filaDetalle("🎁", "Mesa de regalos", [evento.mesaDeRegalos]));
-  }
 
   if (filas.length === 0) return "";
 
   return `<div class="tarjeta"><h2>Detalles</h2>${filas.join("")}</div>`;
+}
+
+/**
+ * Tarjeta dedicada para el tema de regalos ("tu mejor regalo es tu
+ * presencia" + lluvia de sobres, mesa de regalos, etc.) — más presente
+ * que una línea suelta dentro de "Detalles".
+ */
+function seccionRegalo(evento) {
+  if (!evento.mesaDeRegalos) return "";
+  return `<div class="tarjeta regalo-tarjeta">
+    <div class="regalo-icono">💌</div>
+    <p class="regalo-frase">Tu mejor regalo es tu presencia</p>
+    <p class="regalo-detalle">${escapeHtml(evento.mesaDeRegalos)}</p>
+  </div>`;
 }
 
 function filaDetalle(icono, titulo, lineas) {
