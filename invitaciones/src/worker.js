@@ -245,6 +245,9 @@ async function manejarCrearEvento(request, env) {
     modo,
     titulo: body.titulo ?? existente?.titulo,
     subtitulo: body.subtitulo ?? existente?.subtitulo ?? "",
+    // etiquetaHero: sobrescribe la etiqueta pequeña arriba del nombre en el hero
+    // (por defecto la del tema, ej. "¡Fiesta de Cumpleaños!") con un texto propio.
+    etiquetaHero: body.etiquetaHero ?? existente?.etiquetaHero ?? "",
     fechaEvento: body.fechaEvento ?? existente?.fechaEvento ?? null,
     mostrarCountdown: body.mostrarCountdown ?? existente?.mostrarCountdown ?? true,
     // permitirGeneral: en modo "lista", muestra el evento sin código (?c=) en vez del

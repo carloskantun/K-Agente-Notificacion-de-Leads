@@ -112,6 +112,7 @@ Volver a llamar `POST /admin/eventos` con el mismo `slug` actualiza el evento
 | `tipo` | no (default `boda`) | `boda` \| `xv` \| `aniversario` \| `cumpleanos` — tema visual |
 | `modo` | sí (al crear) | `lista` \| `password` \| `publico` |
 | `titulo` | sí (al crear) | Título principal de la invitación |
+| `etiquetaHero` | no | Sobrescribe la etiqueta pequeña arriba del nombre en el hero (por defecto la del tema, ej. `"¡Fiesta de Cumpleaños!"`) con un texto propio, ej. `"¡Te invito a mi fiesta!"` |
 | `clave` | solo si `modo=password` | Contraseña en texto plano — se hashea (PBKDF2) y nunca se devuelve |
 | `permitirGeneral` | no (default `false`), solo `modo=lista` | Si `true`, visitar el link sin `?c=CODIGO` muestra el evento genérico (sin RSVP) en vez de "invitación no encontrada" |
 | `mostrarRSVP` | no (default `true`) | Oculta la sección de confirmación de asistencia si es `false` (solo aplica en `modo=lista`) |

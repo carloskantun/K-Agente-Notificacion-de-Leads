@@ -907,7 +907,7 @@ function renderCompuertaPassword(evento, tema, errorClave, fotoFondo) {
   const decoracion = decoracionEsquinas(evento.decoracion, tema, evento.tipo);
   const heroInterno = `
     <div class="icono">${tema.icono}</div>
-    <div class="hero-etiqueta">${escapeHtml(tema.etiqueta)}</div>
+    <div class="hero-etiqueta">${escapeHtml(evento.etiquetaHero || tema.etiqueta)}</div>
     <h1>${titulo}</h1>
     <p class="hero-subtitulo">Esta invitación es privada. Ingresa la contraseña para verla.</p>`;
 
@@ -959,7 +959,7 @@ function renderContenidoEvento(evento, tema, invitado, fotoFondo) {
   const decoracion = decoracionEsquinas(evento.decoracion, tema, evento.tipo);
   const heroInterno = `
     <div class="icono">${tema.icono}</div>
-    <div class="hero-etiqueta">${escapeHtml(tema.etiqueta)}</div>
+    <div class="hero-etiqueta">${escapeHtml(evento.etiquetaHero || tema.etiqueta)}</div>
     <h1>${escapeHtml(evento.titulo || "")}</h1>
     ${evento.fotoFestejada ? `<div class="foto-festejada"><img src="${escapeHtml(evento.fotoFestejada)}" alt=""></div>` : ""}
     ${evento.subtitulo ? `<p class="hero-subtitulo">${escapeHtml(evento.subtitulo)}</p>` : ""}
