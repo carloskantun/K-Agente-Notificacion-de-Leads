@@ -1240,6 +1240,30 @@ function seccionMensaje(evento) {
 
 function seccionMusica(evento) {
   if (!evento.musicaUrl) return "";
+
+  const yt = youtubeId(evento.musicaUrl);
+  if (yt) {
+    const src = `https://www.youtube.com/embed/${escapeHtml(yt)}?enablejsapi=1&playsinline=1&controls=0&loop=1&playlist=${escapeHtml(yt)}`;
+    return `<iframe id="yt-musica" src="${src}" allow="autoplay; encrypted-media" frameborder="0"
+    style="position:fixed;bottom:0;right:0;width:2px;height:2px;opacity:0;pointer-events:none;" aria-hidden="true"></iframe>
+  <button type="button" id="btn-musica" class="boton-musica">🎵</button>
+  <script>
+  (function() {
+    var iframe = document.getElementById('yt-musica');
+    var btn = document.getElementById('btn-musica');
+    var sonando = false;
+    function comando(func) {
+      iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: func, args: [] }), '*');
+    }
+    btn.addEventListener('click', function() {
+      if (sonando) { comando('pauseVideo'); btn.textContent = '🎵'; }
+      else { comando('playVideo'); btn.textContent = '⏸'; }
+      sonando = !sonando;
+    });
+  })();
+  </script>`;
+  }
+
   return `<audio id="musica-evento" src="${escapeHtml(evento.musicaUrl)}" loop></audio>
   <button type="button" id="btn-musica" class="boton-musica">🎵</button>
   <script>
