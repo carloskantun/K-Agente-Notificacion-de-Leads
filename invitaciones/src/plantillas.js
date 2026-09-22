@@ -251,13 +251,11 @@ function estilos(tema, evento) {
   .hero-plana--sintetico .hero-contenido .icono { font-size: 2.2rem; filter: drop-shadow(0 0 10px rgba(255,255,255,0.5)); }
   .hero-plana--sintetico .hero-etiqueta { color: #6bf1ff; text-shadow: 0 0 12px rgba(107,241,255,0.7); }
   .hero-plana--sintetico h1 {
-    background: linear-gradient(180deg, #fff26b 0%, #ff6fb0 45%, #b23bff 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    -webkit-text-stroke: 1px rgba(23,10,48,0.55);
-    color: #ff6fb0;
-    text-shadow: 0 4px 22px rgba(0,0,0,0.55);
+    color: #fffaf3;
+    text-shadow:
+      0 0 16px rgba(255,110,180,0.95),
+      0 0 32px rgba(178,59,255,0.75),
+      0 4px 16px rgba(0,0,0,0.65);
     letter-spacing: 0.02em;
   }
   .hero-plana--sintetico .hero-subtitulo { color: #f3e9ff; opacity: 0.95; text-shadow: 0 1px 8px rgba(0,0,0,0.4); }
@@ -708,20 +706,35 @@ function estilos(tema, evento) {
 
   .boton-musica {
     position: fixed;
-    bottom: 20px;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
     right: 20px;
     border-radius: 50%;
-    width: 52px;
-    height: 52px;
+    width: 56px;
+    height: 56px;
     padding: 0;
-    z-index: 10;
+    z-index: 1000;
     background: linear-gradient(135deg, var(--primario), var(--acento));
     color: #fff;
-    font-size: 1.2rem;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    font-size: 1.3rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
     transition: transform 0.15s;
   }
   .boton-musica:active { transform: scale(0.92); }
+  .boton-musica::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 2px solid var(--acento);
+    opacity: 0.7;
+    animation: pulso-musica 1.8s ease-out infinite;
+    pointer-events: none;
+  }
+  @keyframes pulso-musica {
+    0% { transform: scale(1); opacity: 0.7; }
+    100% { transform: scale(1.5); opacity: 0; }
+  }
+  .boton-musica.musica-activa::after { animation: none; opacity: 0; }
 </style>`;
 }
 
@@ -1259,6 +1272,7 @@ function seccionMusica(evento) {
       if (sonando) { comando('pauseVideo'); btn.textContent = '🎵'; }
       else { comando('playVideo'); btn.textContent = '⏸'; }
       sonando = !sonando;
+      btn.classList.toggle('musica-activa', sonando);
     });
   })();
   </script>`;
@@ -1275,6 +1289,7 @@ function seccionMusica(evento) {
       if (sonando) { audio.pause(); btn.textContent = '🎵'; }
       else { audio.play().catch(function(){}); btn.textContent = '⏸'; }
       sonando = !sonando;
+      btn.classList.toggle('musica-activa', sonando);
     });
   })();
   </script>`;
