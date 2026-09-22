@@ -1,0 +1,7 @@
+# Copia este archivo a .dev.vars para desarrollo local con `wrangler dev`.
+# .dev.vars NO se sube a git (ver .gitignore raíz: *.vars no está cubierto,
+# pero de todas formas nunca commitees valores reales).
+
+ADMIN_TOKEN=dev-token
+SESSION_SECRET=dev-session-secret-cambia-esto
+# RESEND_API_KEY=

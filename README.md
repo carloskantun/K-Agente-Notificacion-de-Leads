@@ -2,6 +2,8 @@
 
 Framework privado para desplegar agentes de notificación con IA por cliente, sobre Cloudflare Workers. Sin dependencias de terceros innecesarias. Un Worker independiente por negocio.
 
+> **Otro producto en este repo:** [`invitaciones/`](invitaciones/README.md) — landing page de invitación digital (bodas, XV años, aniversarios) con modo lista CSV + RSVP o modo genérico protegido por contraseña. Es un Worker independiente, no forma parte del flujo de leads descrito abajo.
+
 ## ¿Qué hace?
 
 Recibe leads de formularios web → los analiza con IA (OpenAI o Gemini) → despacha cotización por Telegram, correo (Resend) o link de WhatsApp.
